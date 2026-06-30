@@ -29,6 +29,9 @@ const calculateStatus = (openedAt, paoMonths) => {
   
   const diffTime = expirationDate.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  
+  // force rebuild
 
   if (diffDays <= 0) return 'expired';
   if (diffDays <= 30) return 'expiring';
