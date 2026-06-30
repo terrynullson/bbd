@@ -39,7 +39,7 @@ const calculateStatus = (openedAt: string | Date, paoMonths: number) => {
 };
 
 const useCosmetics = () => {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<any[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Читаем из LocalStorage при загрузке
@@ -49,7 +49,7 @@ const useCosmetics = () => {
       try {
         const parsed = JSON.parse(saved);
         // Пересчитываем статусы при каждой загрузке
-        const updated = parsed.map(item => ({
+        const updated = parsed.map((item: any) => ({
           ...item,
           status: calculateStatus(item.openedAt, item.paoMonths)
         }));
@@ -68,7 +68,7 @@ const useCosmetics = () => {
     }
   }, [items, isLoaded]);
 
-  const addItem = (newItem) => {
+ const addItem = (newItem: any) => {
     const itemWithStatus = {
       ...newItem,
       id: Date.now().toString(),
@@ -77,7 +77,7 @@ const useCosmetics = () => {
     setItems(prev => [itemWithStatus, ...prev]);
   };
 
-  const removeItem = (id) => {
+  const removeItem = (id: string) => {
     setItems(prev => prev.filter(item => item.id !== id));
   };
 
@@ -95,7 +95,7 @@ export default function App() {
   const [newBrand, setNewBrand] = useState('');
   const [newPao, setNewPao] = useState(12);
 
-  const handleAdd = (e) => {
+  const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName) return;
     
@@ -117,7 +117,7 @@ export default function App() {
   const sortedItems = [...items].sort((a, b) => {
     // Сначала просроченные, потом истекающие, потом свежие
     const order = { expired: 1, expiring: 2, fresh: 3 };
-    return order[a.status] - order[b.status];
+    return (order as any)[a.status] - (order as any)[b.status];
   });
 
   return (
