@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Calendar, Droplet, Sparkles, AlertCircle } from 'lucide-react';
+import Scanner from './components/Scanner';
 
 // --- ШАГ 1 & 2: ТИПЫ ДАННЫХ И КОНФИГУРАЦИЯ ---
 // В реальном Next.js проекте это было бы в types/index.ts
@@ -89,10 +90,12 @@ const useCosmetics = () => {
 export default function App() {
   const { items, addItem, removeItem, isLoaded } = useCosmetics();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // Форма добавления
   const [newName, setNewName] = useState('');
   const [newBrand, setNewBrand] = useState('');
+  const [newBarcode, setNewBarcode] = useState('');
   const [newPao, setNewPao] = useState(12);
 
   const handleAdd = (e: React.FormEvent) => {
@@ -102,12 +105,14 @@ export default function App() {
     addItem({
       name: newName,
       brand: newBrand || 'Неизвестный бренд',
+      barcode: newBarcode || undefined,
       paoMonths: newPao,
       openedAt: new Date().toISOString(),
     });
     
     setNewName('');
     setNewBrand('');
+    setNewBarcode('');
     setNewPao(12);
     setIsModalOpen(false);
   };
@@ -255,6 +260,26 @@ export default function App() {
               </div>
 
               <div>
+                <label className="block text-sm font-bold text-slate-500 mb-2 pl-2">Штрих-код</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text"
+                    placeholder="Например: 4600..."
+                    value={newBarcode}
+                    onChange={e => setNewBarcode(e.target.value)}
+                    className="flex-1 bg-[#FDFBF7] border-2 border-[#E9F5E9] p-4 rounded-[20px] font-semibold outline-none focus:border-[#FF4DEB] transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsScannerOpen(true)}
+                    className="p-4 bg-[#2E3CFF] text-white rounded-[20px]"
+                  >
+                    📷
+                  </button>
+                </div>
+              </div>
+
+              <div>
                 <label className="block text-sm font-bold text-slate-500 mb-2 pl-2 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" /> Срок после вскрытия (PAO)
                 </label>
@@ -285,6 +310,16 @@ export default function App() {
             </form>
           </div>
         </div>
+      )}
+
+      {isScannerOpen && (
+        <Scanner
+          onClose={() => setIsScannerOpen(false)}
+          onScanSuccess={(code) => {
+            setNewBarcode(code);
+            setIsScannerOpen(false);
+          }}
+        />
       )}
     </div>
   );
