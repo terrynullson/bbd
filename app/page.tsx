@@ -97,6 +97,8 @@ export default function App() {
   const [newBrand, setNewBrand] = useState('');
   const [newBarcode, setNewBarcode] = useState('');
   const [newPao, setNewPao] = useState(12);
+  const [isSmartLoading, setIsSmartLoading] = useState(false);
+  const [smartError, setSmartError] = useState('');
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,6 +117,46 @@ export default function App() {
     setNewBarcode('');
     setNewPao(12);
     setIsModalOpen(false);
+    setSmartError('');
+  };
+
+  const handleSmartFill = async () => {
+    const trimmedName = newName.trim();
+    if (!trimmedName) {
+      setSmartError('Введите название продукта для анализа');
+      return;
+    }
+
+    setIsSmartLoading(true);
+    setSmartError('');
+
+    try {
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: trimmedName }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Не удалось получить ответ от ИИ');
+      }
+
+      if (typeof data?.name === 'string' && data.name.trim()) {
+        setNewName(data.name.trim());
+      }
+      if (typeof data?.brand === 'string' && data.brand.trim()) {
+        setNewBrand(data.brand.trim());
+      }
+      if (typeof data?.paoMonths === 'number' && Number.isFinite(data.paoMonths)) {
+        setNewPao(Math.max(1, Math.round(data.paoMonths)));
+      }
+    } catch (error) {
+      setSmartError(error instanceof Error ? error.message : 'Не удалось обработать запрос');
+    } finally {
+      setIsSmartLoading(false);
+    }
   };
 
   if (!isLoaded) return <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">Загрузка...</div>;
@@ -249,14 +291,35 @@ export default function App() {
 
               <div>
                 <label className="block text-sm font-bold text-slate-500 mb-2 pl-2">Название продукта*</label>
-                <input 
-                  type="text" 
-                  required
-                  placeholder="Увлажняющий лосьон" 
-                  value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  className="w-full bg-[#FDFBF7] border-2 border-[#E9F5E9] p-4 rounded-[20px] font-semibold outline-none focus:border-[#FF4DEB] transition-colors"
-                />
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="Увлажняющий лосьон" 
+                    value={newName}
+                    onChange={e => {
+                      setNewName(e.target.value);
+                      if (smartError) setSmartError('');
+                    }}
+                    className="flex-1 bg-[#FDFBF7] border-2 border-[#E9F5E9] p-4 rounded-[20px] font-semibold outline-none focus:border-[#FF4DEB] transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSmartFill}
+                    disabled={isSmartLoading || !newName.trim()}
+                    className="p-4 rounded-[20px] bg-[#FF4DEB] text-white shadow-[0_8px_24px_rgba(255,77,235,0.4)] disabled:opacity-60 disabled:shadow-none transition-all"
+                    title="Умный ввод"
+                  >
+                    {isSmartLoading ? (
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/70 border-t-transparent" />
+                    ) : (
+                      <Sparkles className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+                {smartError && (
+                  <p className="mt-2 text-sm text-[#FF3366]">{smartError}</p>
+                )}
               </div>
 
               <div>
