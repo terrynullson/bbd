@@ -22,7 +22,7 @@ import { Plus, Trash2, Calendar, Droplet, Sparkles, AlertCircle } from 'lucide-r
 // Опасность: #FF3366 (Красный)
 
 // --- ШАГ 3: ЛОГИКА ДАННЫХ (ХУК) ---
-const calculateStatus = (openedAt, paoMonths) => {
+const calculateStatus = (openedAt: string | Date, paoMonths: number) => {
   const openDate = new Date(openedAt);
   const expirationDate = new Date(openDate.setMonth(openDate.getMonth() + paoMonths));
   const today = new Date();
