@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { X, Camera } from 'lucide-react';
+import { X, Camera, ScanLine } from 'lucide-react';
 
 type ScannerProps = {
   onScanSuccess: (code: string) => void;
@@ -13,6 +13,14 @@ type ScannerProps = {
 export default function Scanner({ onScanSuccess, onClose }: ScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [hint, setHint] = useState('Наведите камеру на штрих-код');
+
+  const isValidBarcode = (value: string) => {
+    const normalized = value.trim();
+    if (!normalized) return false;
+    if (/^\d{8,13}$/.test(normalized)) return true;
+    return false;
+  };
 
   useEffect(() => {
     let scanner: any = null;
@@ -32,10 +40,19 @@ export default function Scanner({ onScanSuccess, onClose }: ScannerProps) {
 
         scanner.render(
           (decodedText: string) => {
+            if (!isValidBarcode(decodedText)) {
+              setHint('Сканирован не EAN/UPC. Попробуйте ещё раз.');
+              return;
+            }
+
             scanner.clear();
-            onScanSuccess(decodedText);
+            onScanSuccess(decodedText.trim());
           },
-          (err: string) => {}
+          (err: string) => {
+            if (err && typeof err === 'string' && !err.includes('No QR code')) {
+              setHint('Проверьте освещение и положение штрих-кода');
+            }
+          }
         );
         setIsReady(true);
       } catch (err) {
@@ -61,7 +78,12 @@ export default function Scanner({ onScanSuccess, onClose }: ScannerProps) {
         >
           <X className="w-6 h-6" />
         </button>
-        
+
+        <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-600">
+          <ScanLine className="w-4 h-4 text-[#2E3CFF]" />
+          Сканер штрих-кодов
+        </div>
+
         {error ? (
           <div className="p-8 text-center text-red-500 font-bold">
             <Camera className="w-12 h-12 mx-auto mb-4" />
@@ -74,7 +96,19 @@ export default function Scanner({ onScanSuccess, onClose }: ScannerProps) {
             </button>
           </div>
         ) : (
-          <div id="reader" className="overflow-hidden rounded-[24px]"></div>
+          <div className="space-y-3">
+            <div className="rounded-[24px] overflow-hidden border border-slate-200">
+              <div id="reader" className="min-h-[280px]" />
+            </div>
+            <div className="rounded-[20px] bg-[#FDFBF7] p-3 text-sm text-slate-600">
+              <div className="flex items-center justify-between">
+                <span>{hint}</span>
+                <span className={`text-xs font-bold ${isReady ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  {isReady ? 'Готово' : 'Инициализация...'}
+                </span>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
