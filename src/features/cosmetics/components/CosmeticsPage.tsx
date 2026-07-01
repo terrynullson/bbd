@@ -18,7 +18,7 @@ export function CosmeticsPage() {
 
   if (!isLoaded) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-bg text-muted">
+      <div className="flex min-h-dvh items-center justify-center bg-bg text-muted">
         Загрузка...
       </div>
     );
@@ -30,26 +30,34 @@ export function CosmeticsPage() {
       ? `${summary.fresh} свежих · ${summary.expiring} истекают · ${summary.expired} просрочено`
       : null;
 
+  const bottomPad = items.length > 0 ? 'pb-[calc(5.5rem+var(--safe-bottom))]' : 'pb-6';
+
   return (
-    <div className="mx-auto min-h-screen max-w-lg bg-bg pb-32">
+    <div className="mx-auto min-h-dvh w-full max-w-lg bg-bg">
       <PageHero summary={summaryLine} />
 
-      <main className="space-y-4 px-4 pt-5">
+      <main
+        className={`relative z-10 -mt-5 rounded-t-[28px] bg-surface px-4 pt-6 shadow-[0_-8px_32px_rgba(44,36,32,0.06)] ${bottomPad}`}
+      >
         {items.length === 0 ? (
           <EmptyState onAdd={() => setIsModalOpen(true)} />
         ) : (
           <CosmeticsDashboard items={items} onRemove={removeItem} />
         )}
 
-        <p className="pt-2 text-center text-[10px] uppercase tracking-[0.2em] text-muted/70">
+        <p className="mt-6 pb-2 text-center text-[10px] uppercase tracking-[0.2em] text-muted/60">
           v{APP_VERSION}
         </p>
       </main>
 
       {items.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border/60 bg-bg/80 p-4 backdrop-blur-xl">
-          <div className="mx-auto max-w-lg">
-            <Button size="lg" className="w-full rounded-[14px]" onClick={() => setIsModalOpen(true)}>
+        <div className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t border-border/50 bg-surface/90 px-4 pt-3 backdrop-blur-xl">
+          <div className="mx-auto w-full max-w-lg">
+            <Button
+              size="lg"
+              className="h-12 w-full rounded-[14px] text-[15px]"
+              onClick={() => setIsModalOpen(true)}
+            >
               <Plus className="h-5 w-5" />
               Добавить продукт
             </Button>

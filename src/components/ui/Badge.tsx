@@ -18,9 +18,9 @@ const variants: Record<BadgeVariant, string> = {
 };
 
 const solidVariants: Record<BadgeVariant, string> = {
-  fresh: 'bg-fresh text-white',
-  expiring: 'bg-expiring text-white',
-  expired: 'bg-expired text-white',
+  fresh: 'bg-fresh text-[#163129]',
+  expiring: 'bg-expiring text-[#3d2e12]',
+  expired: 'bg-expired text-[#3d1715]',
   neutral: 'bg-muted/20 text-text',
 };
 

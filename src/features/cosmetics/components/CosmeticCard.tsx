@@ -2,7 +2,6 @@
 
 import { Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import {
   getDaysRemaining,
   getPaoProgress,
@@ -27,50 +26,51 @@ export function CosmeticCard({ item, onRemove }: CosmeticCardProps) {
   const progress = getPaoProgress(item.openedAt, item.paoMonths);
 
   return (
-    <article className="relative rounded-card bg-surface p-4 shadow-[var(--shadow-card)]">
-      <div className="absolute right-4 top-4">
-        <Badge variant={item.status} solid>
-          {STATUS_LABELS[item.status]}
-        </Badge>
-      </div>
-
-      <div className="flex items-start gap-3.5 pr-24">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px] bg-icon-bg text-accent">
-          <ProductIllustration category={item.category} />
+    <article className="rounded-[18px] border border-border/80 bg-bg p-4">
+      <div className="flex gap-3">
+        <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[14px] bg-icon-bg text-accent">
+          <ProductIllustration category={item.category} className="h-9 w-9" />
         </div>
 
-        <div className="min-w-0 flex-1 pt-0.5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
-            {getCategoryLabel(item.category)}
-          </p>
-          <h3 className="mt-1 font-display text-[1.05rem] font-semibold leading-snug text-text">
-            {item.name}
-          </h3>
-          <p className="mt-1 text-xs text-muted">{item.brand}</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+                {getCategoryLabel(item.category)}
+              </p>
+              <h3 className="mt-0.5 font-display text-[1.05rem] font-semibold leading-snug text-text">
+                {item.name}
+              </h3>
+              <p className="mt-0.5 truncate text-xs text-muted">{item.brand}</p>
+            </div>
+            <Badge variant={item.status} solid className="shrink-0">
+              {STATUS_LABELS[item.status]}
+            </Badge>
+          </div>
         </div>
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={() => onRemove(item.id)}
-          aria-label="Удалить"
-          className="absolute bottom-4 right-4 h-9 w-9 shrink-0 text-muted hover:text-expired"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
       </div>
 
-      <div className="mt-4 border-t border-border/70 pt-3">
-        <div className="mb-2 flex items-center justify-between text-[11px] text-muted">
-          <span>
+      <div className="mt-4 space-y-2.5 border-t border-border/60 pt-3">
+        <div className="flex items-center justify-between gap-3 text-[12px] text-muted">
+          <span className="shrink-0">
             {item.status === 'expired'
               ? 'Срок истёк'
               : `${daysRemaining} дн. осталось`}
           </span>
-          <span>{item.paoMonths}M PAO</span>
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="truncate">{item.paoMonths}M PAO</span>
+            <button
+              type="button"
+              onClick={() => onRemove(item.id)}
+              aria-label="Удалить"
+              className="touch-target inline-flex shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-expired/10 hover:text-expired"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-        <div className="h-1 overflow-hidden rounded-full bg-bg">
+
+        <div className="h-1.5 overflow-hidden rounded-full bg-surface">
           <div
             className={`h-full rounded-full transition-all ${
               item.status === 'fresh'

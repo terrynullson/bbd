@@ -16,17 +16,19 @@
   --shadow-card: 0 4px 12px rgba(44, 36, 32, 0.06);
   --shadow-button: 0 8px 20px rgba(193, 125, 101, 0.28);
   --shadow-modal: 0 24px 48px rgba(44, 36, 32, 0.14);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .dark {
-  --bg: #171311;
-  --surface: #221d1a;
+  --bg: #141110;
+  --surface: #1f1a17;
   --text: #f4ede6;
   --muted: #a89b92;
   --border: #342c27;
   --accent: #d88972;
   --accent-hover: #e09882;
-  --accent-foreground: #171311;
+  --accent-foreground: #141110;
   --fresh: #7eb7a8;
   --expiring: #e0b35f;
   --expired: #dd7a7a;
@@ -62,6 +64,7 @@
 
 html {
   color-scheme: light;
+  -webkit-text-size-adjust: 100%;
 }
 
 html.dark {
@@ -71,11 +74,13 @@ html.dark {
 body {
   margin: 0;
   min-height: 100%;
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-dm-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
 .font-display {
@@ -84,6 +89,25 @@ body {
 
 ::selection {
   background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.safe-top {
+  padding-top: max(0.75rem, var(--safe-top));
+}
+
+.safe-bottom {
+  padding-bottom: max(1rem, var(--safe-bottom));
+}
+
+.touch-target {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+input[type='date'] {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 48px;
 }
 
 .scanner-viewfinder {
@@ -97,7 +121,6 @@ body {
   height: auto !important;
   max-height: 320px;
   object-fit: cover;
-  border-radius: 0;
 }
 
 .scanner-shell img[alt='Info icon'],

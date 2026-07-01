@@ -15,6 +15,14 @@ type AddProductModalProps = {
   onSubmit: (input: AddProductInput) => void;
 };
 
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+      {children}
+    </label>
+  );
+}
+
 export function AddProductModal({ onClose, onSubmit }: AddProductModalProps) {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const form = useAddProductForm();
@@ -32,27 +40,33 @@ export function AddProductModal({ onClose, onSubmit }: AddProductModalProps) {
   return (
     <>
       <Modal onClose={onClose}>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input
-            placeholder="Бренд"
-            value={form.brand}
-            onChange={(e) => {
-              form.setBrand(e.target.value);
-              if (form.smartError) form.setSmartError('');
-            }}
-          />
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div>
+            <FieldLabel>Бренд</FieldLabel>
+            <Input
+              placeholder="Например, CeraVe"
+              value={form.brand}
+              onChange={(e) => {
+                form.setBrand(e.target.value);
+                if (form.smartError) form.setSmartError('');
+              }}
+            />
+          </div>
 
-          <Input
-            required
-            placeholder="Название продукта"
-            value={form.name}
-            onChange={(e) => {
-              form.setName(e.target.value);
-              if (form.smartError) form.setSmartError('');
-            }}
-          />
+          <div>
+            <FieldLabel>Название продукта</FieldLabel>
+            <Input
+              required
+              placeholder="Увлажняющий крем"
+              value={form.name}
+              onChange={(e) => {
+                form.setName(e.target.value);
+                if (form.smartError) form.setSmartError('');
+              }}
+            />
+          </div>
 
-          <div className="rounded-[14px] bg-bg p-4">
+          <div className="rounded-[16px] bg-bg p-4">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface text-accent shadow-[var(--shadow-card)]">
                 <Sparkles className="h-4 w-4" />
@@ -60,47 +74,47 @@ export function AddProductModal({ onClose, onSubmit }: AddProductModalProps) {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-text">Умное заполнение</p>
                 <p className="mt-1 text-xs leading-relaxed text-muted">
-                  Исправит опечатки и дополнит поля на основе введённых данных.
+                  Исправит опечатки и дополнит поля.
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={form.handleSmartFill}
-                disabled={!form.canSmartFill || form.isSmartLoading}
-                className="shrink-0"
-              >
-                {form.isSmartLoading ? '...' : 'Заполнить'}
-              </Button>
             </div>
-            {form.smartError && (
-              <p className="mt-3 text-sm text-expired">{form.smartError}</p>
-            )}
-          </div>
-
-          <div className="flex gap-2">
-            <Input
-              placeholder="Штрих-код"
-              value={form.barcode}
-              onChange={(e) => form.setBarcode(e.target.value)}
-              className="flex-1"
-            />
             <Button
               type="button"
               variant="secondary"
-              size="icon"
-              onClick={() => setIsScannerOpen(true)}
-              aria-label="Сканировать штрих-код"
+              className="mt-3 h-11 w-full"
+              onClick={form.handleSmartFill}
+              disabled={!form.canSmartFill || form.isSmartLoading}
             >
-              <Camera className="h-4 w-4" />
+              {form.isSmartLoading ? 'Заполняем...' : 'Заполнить'}
             </Button>
+            {form.smartError && (
+              <p className="mt-2 text-sm text-expired">{form.smartError}</p>
+            )}
           </div>
 
           <div>
-            <label className="mb-2 block text-xs font-medium uppercase tracking-[0.12em] text-muted">
-              Дата вскрытия
-            </label>
+            <FieldLabel>Штрих-код</FieldLabel>
+            <div className="flex items-stretch gap-2">
+              <Input
+                placeholder="4600..."
+                value={form.barcode}
+                onChange={(e) => form.setBarcode(e.target.value)}
+                className="min-w-0 flex-1"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setIsScannerOpen(true)}
+                aria-label="Сканировать штрих-код"
+                className="h-12 w-12 shrink-0 rounded-[14px] p-0"
+              >
+                <Camera className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Дата вскрытия</FieldLabel>
             <Input
               type="date"
               value={form.openedAt}
@@ -110,13 +124,11 @@ export function AddProductModal({ onClose, onSubmit }: AddProductModalProps) {
           </div>
 
           <div>
-            <label className="mb-3 block text-xs font-medium uppercase tracking-[0.12em] text-muted">
-              Срок после вскрытия
-            </label>
+            <FieldLabel>Срок после вскрытия</FieldLabel>
             <PaoSelector value={form.paoMonths} onChange={form.setPaoMonths} />
           </div>
 
-          <Button type="submit" size="lg" className="mt-1 w-full rounded-[14px]">
+          <Button type="submit" size="lg" className="mt-1 h-12 w-full rounded-[14px]">
             Сохранить
           </Button>
         </form>

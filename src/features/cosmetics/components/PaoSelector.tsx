@@ -8,17 +8,17 @@ type PaoSelectorProps = {
 
 export function PaoSelector({ value, onChange }: PaoSelectorProps) {
   return (
-    <div className="flex gap-3">
+    <div className="grid grid-cols-4 gap-2.5">
       {PAO_OPTIONS.map((months) => (
         <button
           key={months}
           type="button"
           onClick={() => onChange(months)}
           className={cn(
-            'flex h-12 w-12 items-center justify-center rounded-full border text-xs font-semibold transition-colors',
+            'touch-target flex h-12 w-full items-center justify-center rounded-full border text-sm font-semibold transition-colors',
             value === months
               ? 'border-accent bg-accent/10 text-accent'
-              : 'border-border bg-surface text-muted hover:border-accent/30',
+              : 'border-border bg-surface text-muted active:bg-bg',
           )}
         >
           {months}M
