@@ -1,0 +1,25 @@
+{
+  "name": "Где Мой Крем?",
+  "short_name": "Мой Крем",
+  "description": "Умный трекер сроков годности косметики после вскрытия",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f3ee",
+  "theme_color": "#c4715b",
+  "orientation": "portrait-primary",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

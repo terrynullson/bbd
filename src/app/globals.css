@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f7f3ee;
+  --surface: #ffffff;
+  --text: #2c2420;
+  --muted: #8a7f78;
+  --border: #e8e0d8;
+  --accent: #c4715b;
+  --accent-hover: #b5634f;
+  --accent-foreground: #fffaf7;
+  --fresh: #5b9a8b;
+  --expiring: #d4a04a;
+  --expired: #c45b5b;
+  --shadow-card: 0 1px 3px rgba(44, 36, 32, 0.08);
+  --shadow-button: 0 8px 24px rgba(196, 113, 91, 0.22);
+  --shadow-modal: 0 24px 48px rgba(44, 36, 32, 0.12);
+}
+
+.dark {
+  --bg: #171311;
+  --surface: #221d1a;
+  --text: #f4ede6;
+  --muted: #a89b92;
+  --border: #342c27;
+  --accent: #d88972;
+  --accent-hover: #e09882;
+  --accent-foreground: #171311;
+  --fresh: #7eb7a8;
+  --expiring: #e0b35f;
+  --expired: #dd7a7a;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.28);
+  --shadow-button: 0 8px 24px rgba(216, 137, 114, 0.18);
+  --shadow-modal: 0 24px 48px rgba(0, 0, 0, 0.35);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-fresh: var(--fresh);
+  --color-expiring: var(--expiring);
+  --color-expired: var(--expired);
+  --radius-card: 16px;
+  --radius-button: 12px;
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-fraunces);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+#barcode-reader video {
+  border-radius: 12px;
+}
