@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  buildAnalyzeContext,
+  isUnknownBrand,
+  UNKNOWN_BRAND,
+} from '@/features/cosmetics/lib/analyze-context';
 import { inferCategoryFromText } from '@/features/cosmetics/lib/categories';
 import type { ProductCategory } from '@/features/cosmetics/types';
 
@@ -6,8 +11,6 @@ const BBD_AI_KEY = process.env.BBD_AI_KEY;
 const BBD_AI_BASE_URL =
   process.env.BBD_AI_BASE_URL || 'https://api.deepseek.com/v1';
 const BBD_AI_MODEL = process.env.BBD_AI_MODEL || 'deepseek-chat';
-
-const UNKNOWN_BRAND = 'Неизвестный бренд';
 
 const VALID_CATEGORIES = new Set<ProductCategory>([
   'cream',
@@ -28,17 +31,40 @@ function parseCategory(value: unknown, fallbackText: string): ProductCategory {
   return inferCategoryFromText(fallbackText);
 }
 
+function finalizeResult(input: {
+  userBrand: string;
+  userName: string;
+  aiBrand: string;
+  aiName: string;
+  paoMonths: number;
+  category: ProductCategory;
+}) {
+  const brand = !isUnknownBrand(input.aiBrand)
+    ? input.aiBrand
+    : input.userBrand || UNKNOWN_BRAND;
+
+  const name = input.aiName || input.userName;
+
+  return {
+    brand,
+    name,
+    paoMonths: input.paoMonths,
+    category: input.category,
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const query = typeof body?.query === 'string' ? body.query.trim() : '';
-    const existingBrand =
+    const userBrand =
       typeof body?.brand === 'string' ? body.brand.trim() : '';
-    const existingName = typeof body?.name === 'string' ? body.name.trim() : '';
+    const userName = typeof body?.name === 'string' ? body.name.trim() : '';
+    const userBarcode =
+      typeof body?.barcode === 'string' ? body.barcode.trim() : '';
 
-    if (!query && !existingBrand && !existingName) {
+    if (!userBrand && !userName && !userBarcode) {
       return NextResponse.json(
-        { error: 'Пустой запрос для анализа' },
+        { error: 'Введите бренд, название или штрих-код для анализа' },
         { status: 400 },
       );
     }
@@ -50,14 +76,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const contextParts: string[] = [];
-    if (existingBrand) {
-      contextParts.push(`Бренд (уже введён пользователем): ${existingBrand}`);
-    }
-    if (existingName) {
-      contextParts.push(`Название (уже введено пользователем): ${existingName}`);
-    }
-    if (query) contextParts.push(`Запрос для анализа: ${query}`);
+    const analyzeInput = {
+      brand: userBrand || undefined,
+      name: userName || undefined,
+      barcode: userBarcode || undefined,
+    };
 
     const response = await fetch(`${BBD_AI_BASE_URL}/chat/completions`, {
       method: 'POST',
@@ -72,24 +95,26 @@ export async function POST(request: NextRequest) {
         messages: [
           {
             role: 'system',
-            content: `Ты — эксперт-модератор базы данных косметики проекта "Где Мой Крем?".
-Твоя задача — извлечь данные о косметическом продукте из текста пользователя, исправить опечатки и нормализовать их.
+            content: `Ты — эксперт по косметике в проекте "Где Мой Крем?".
+Пользователь добавляет продукт вручную. Поля формы — его черновик: опечатки, транслит, сленг и неполные названия допустимы.
 
-Верни СТРОГО валидный JSON в формате:
+Твоя задача — НОРМАЛИЗОВАТЬ и ДОПОЛНИТЬ данные. Не копируй ввод дословно, если его можно улучшить.
+
+Верни СТРОГО валидный JSON:
 {"brand":"string","name":"string","paoMonths":number,"category":"cream|serum|toner|cleanser|mask|other"}
 
-Правила нормализации:
-1. brand — бренд с большой буквы (например, "CeraVe", "Gucci") или "${UNKNOWN_BRAND}".
-2. Если пользователь УЖЕ ввёл бренд — сохрани его. Не заменяй на "${UNKNOWN_BRAND}".
-3. name — краткое название продукта без повторения бренда. Если пользователь ввёл название, уточни его, но не стирай смысл.
-4. paoMonths — срок после вскрытия в месяцах. Если пользователь указал ("6м", "12 месяцев") — бери его. Иначе: тушь/подводка — 6, кремы/сыворотки/SPF — 12, сухие текстуры — 24.
+Правила:
+1. brand — каноническое написание бренда (примеры: "Гучи"→"Gucci", "цераве"→"CeraVe", "manyo"→"Manyo").
+2. "${UNKNOWN_BRAND}" — только если бренд невозможно определить ни из одного поля. Если пользователь указал бренд, даже с ошибкой, распознай и нормализуй его.
+3. name — краткое название продукта без бренда. Короткие названия расширяй по смыслу ("Крем"→"Увлажняющий крем для лица"), если тип понятен из контекста.
+4. paoMonths — срок после вскрытия в месяцах из текста или по стандарту: тушь/подводка 6, кремы/сыворотки/SPF 12, пудры/тени 24.
 5. category — тип продукта по смыслу.
 
-Не добавляй markdown, пояснения и лишний текст. Только чистый JSON.`,
+Не добавляй markdown и пояснения. Только JSON.`,
           },
           {
             role: 'user',
-            content: contextParts.join('\n'),
+            content: buildAnalyzeContext(analyzeInput),
           },
         ],
       }),
@@ -129,19 +154,7 @@ export async function POST(request: NextRequest) {
     const aiName =
       typeof parsed?.name === 'string' && parsed.name.trim()
         ? parsed.name.trim()
-        : existingName || query;
-
-    const brand = existingBrand
-      ? existingBrand
-      : aiBrand === UNKNOWN_BRAND
-        ? UNKNOWN_BRAND
-        : aiBrand;
-
-    const name = existingName
-      ? aiName.length > existingName.length
-        ? aiName
-        : existingName
-      : aiName;
+        : '';
 
     const paoMonths = Number.isFinite(Number(parsed?.paoMonths))
       ? Math.max(1, Math.round(Number(parsed?.paoMonths)))
@@ -149,10 +162,26 @@ export async function POST(request: NextRequest) {
 
     const category = parseCategory(
       parsed?.category,
-      `${brand} ${name} ${query}`,
+      `${aiBrand} ${aiName} ${userBrand} ${userName}`,
     );
 
-    return NextResponse.json({ brand, name, paoMonths, category });
+    const result = finalizeResult({
+      userBrand,
+      userName,
+      aiBrand,
+      aiName,
+      paoMonths,
+      category,
+    });
+
+    if (!result.name) {
+      return NextResponse.json(
+        { error: 'Не удалось определить название продукта' },
+        { status: 422 },
+      );
+    }
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Analyze route failed', error);
     return NextResponse.json(

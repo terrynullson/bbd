@@ -52,17 +52,26 @@ export function AddProductModal({ onClose, onSubmit }: AddProductModalProps) {
             <label className="mb-2 block pl-1 text-sm font-medium text-muted">
               Название продукта
             </label>
-            <div className="flex gap-2">
-              <Input
-                required
-                placeholder="Увлажняющий крем"
-                value={form.name}
-                onChange={(e) => {
-                  form.setName(e.target.value);
-                  if (form.smartError) form.setSmartError('');
-                }}
-                className="flex-1"
-              />
+            <Input
+              required
+              placeholder="Увлажняющий крем"
+              value={form.name}
+              onChange={(e) => {
+                form.setName(e.target.value);
+                if (form.smartError) form.setSmartError('');
+              }}
+            />
+          </div>
+
+          <div className="rounded-button border border-border bg-bg p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-text">Умное заполнение</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted">
+                  Исправит опечатки, нормализует бренд и дополнит название на
+                  основе уже введённых полей.
+                </p>
+              </div>
               <SmartFillButton
                 onClick={form.handleSmartFill}
                 disabled={!form.canSmartFill}
@@ -70,12 +79,8 @@ export function AddProductModal({ onClose, onSubmit }: AddProductModalProps) {
               />
             </div>
             {form.smartError && (
-              <p className="mt-2 text-sm text-expired">{form.smartError}</p>
+              <p className="mt-3 text-sm text-expired">{form.smartError}</p>
             )}
-            <p className="mt-2 text-xs text-muted">
-              ИИ учитывает уже введённые бренд и название и дополняет их, не
-              стирая ваши данные.
-            </p>
           </div>
 
           <div>

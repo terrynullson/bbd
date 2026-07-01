@@ -82,6 +82,21 @@ body {
   background: color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
-#barcode-reader video {
-  border-radius: 12px;
+.scanner-viewfinder {
+  width: 100%;
+  min-height: 280px;
+}
+
+.scanner-viewfinder video {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 360px;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.scanner-shell img[alt='Info icon'],
+.scanner-shell br {
+  display: none;
 }

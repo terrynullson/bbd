@@ -1,7 +1,6 @@
 import {
-  buildAnalyzeQuery,
-  mergeAnalyzeResult,
-} from '../lib/merge-analyze';
+  hasAnalyzeInput,
+} from '../lib/analyze-context';
 import type {
   AnalyzeProductRequest,
   AnalyzeProductResponse,
@@ -10,16 +9,20 @@ import type {
 export async function analyzeProduct(
   input: AnalyzeProductRequest,
 ): Promise<AnalyzeProductResponse> {
-  const query = buildAnalyzeQuery(input);
+  const payload: AnalyzeProductRequest = {
+    brand: input.brand?.trim() || undefined,
+    name: input.name?.trim() || undefined,
+    barcode: input.barcode?.trim() || undefined,
+  };
 
-  if (!query.trim()) {
-    throw new Error('Введите название или бренд для анализа');
+  if (!hasAnalyzeInput(payload)) {
+    throw new Error('Введите бренд или название для анализа');
   }
 
   const response = await fetch('/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...input, query }),
+    body: JSON.stringify(payload),
   });
 
   const data = await response.json();
@@ -28,5 +31,5 @@ export async function analyzeProduct(
     throw new Error(data?.error || 'Не удалось получить ответ от ИИ');
   }
 
-  return mergeAnalyzeResult(input, data as AnalyzeProductResponse);
+  return data as AnalyzeProductResponse;
 }

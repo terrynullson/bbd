@@ -29,7 +29,6 @@ export interface AddProductInput {
 }
 
 export interface AnalyzeProductRequest {
-  query?: string;
   brand?: string;
   name?: string;
   barcode?: string;

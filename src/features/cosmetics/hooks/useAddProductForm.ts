@@ -64,18 +64,16 @@ export function useAddProductForm() {
       const result = await analyzeProduct({
         brand: trimmedBrand || undefined,
         name: trimmedName || undefined,
-        query: [trimmedBrand, trimmedName].filter(Boolean).join(' '),
         barcode: barcode.trim() || undefined,
       });
 
-      if (result.brand) setBrand(result.brand);
-      if (result.name) setName(result.name);
-      if (result.paoMonths) setPaoMonths(result.paoMonths);
-      if (result.category) {
-        setCategory(result.category);
-      } else {
-        setCategory(inferCategoryFromText(`${result.brand} ${result.name}`));
-      }
+      setBrand(result.brand);
+      setName(result.name);
+      setPaoMonths(result.paoMonths);
+      setCategory(
+        result.category ??
+          inferCategoryFromText(`${result.brand} ${result.name}`),
+      );
     } catch (error) {
       setSmartError(
         error instanceof Error ? error.message : 'Не удалось обработать запрос',
