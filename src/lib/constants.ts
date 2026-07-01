@@ -15,4 +15,4 @@ export const EXPIRING_THRESHOLD_DAYS = 30;
 export const APP_NAME = 'Где Мой Крем?';
 export const APP_DESCRIPTION =
   'Умный трекер сроков годности косметики после вскрытия';
-export const APP_VERSION = '2.2.1';
+export const APP_VERSION = '2.2.2';
