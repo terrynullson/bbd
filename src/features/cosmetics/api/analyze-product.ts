@@ -1,6 +1,7 @@
 import {
   hasAnalyzeInput,
 } from '../lib/analyze-context';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type {
   AnalyzeProductRequest,
   AnalyzeProductResponse,
@@ -19,9 +20,19 @@ export async function analyzeProduct(
     throw new Error('Введите бренд или название для анализа');
   }
 
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  const supabase = getSupabaseBrowserClient();
+  const { data: sessionData } = supabase
+    ? await supabase.auth.getSession()
+    : { data: { session: null } };
+
+  if (sessionData.session?.access_token) {
+    headers.Authorization = `Bearer ${sessionData.session.access_token}`;
+  }
+
   const response = await fetch('/api/analyze', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(payload),
   });
 

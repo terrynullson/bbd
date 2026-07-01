@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { analyzeProduct } from '../api/analyze-product';
 import { inferCategoryFromText } from '../lib/categories';
 import type { AddProductInput, ProductCategory } from '../types';
@@ -12,27 +12,49 @@ const DEFAULT_FORM = {
   paoMonths: 12,
   openedAt: new Date().toISOString().slice(0, 10),
   category: 'other' as ProductCategory,
+  imageUrl: '',
+  notes: '',
+  lookupSource: 'manual' as AddProductInput['lookupSource'],
 };
 
-export function useAddProductForm() {
+function toDateInputValue(value?: string) {
+  if (!value) return new Date().toISOString().slice(0, 10);
+  return new Date(value).toISOString().slice(0, 10);
+}
+
+export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
   const [name, setName] = useState(DEFAULT_FORM.name);
   const [brand, setBrand] = useState(DEFAULT_FORM.brand);
   const [barcode, setBarcode] = useState(DEFAULT_FORM.barcode);
   const [paoMonths, setPaoMonths] = useState(DEFAULT_FORM.paoMonths);
   const [openedAt, setOpenedAt] = useState(DEFAULT_FORM.openedAt);
   const [category, setCategory] = useState<ProductCategory>(DEFAULT_FORM.category);
+  const [imageUrl, setImageUrl] = useState(DEFAULT_FORM.imageUrl);
+  const [notes, setNotes] = useState(DEFAULT_FORM.notes);
+  const [lookupSource, setLookupSource] = useState(DEFAULT_FORM.lookupSource);
   const [isSmartLoading, setIsSmartLoading] = useState(false);
   const [smartError, setSmartError] = useState('');
 
-  const reset = useCallback(() => {
-    setName(DEFAULT_FORM.name);
-    setBrand(DEFAULT_FORM.brand);
-    setBarcode(DEFAULT_FORM.barcode);
-    setPaoMonths(DEFAULT_FORM.paoMonths);
-    setOpenedAt(new Date().toISOString().slice(0, 10));
-    setCategory(DEFAULT_FORM.category);
+  const applyValues = useCallback((values?: Partial<AddProductInput>) => {
+    setName(values?.name ?? DEFAULT_FORM.name);
+    setBrand(values?.brand ?? DEFAULT_FORM.brand);
+    setBarcode(values?.barcode ?? DEFAULT_FORM.barcode);
+    setPaoMonths(values?.paoMonths ?? DEFAULT_FORM.paoMonths);
+    setOpenedAt(toDateInputValue(values?.openedAt));
+    setCategory(values?.category ?? DEFAULT_FORM.category);
+    setImageUrl(values?.imageUrl ?? DEFAULT_FORM.imageUrl);
+    setNotes(values?.notes ?? DEFAULT_FORM.notes);
+    setLookupSource(values?.lookupSource ?? DEFAULT_FORM.lookupSource);
     setSmartError('');
   }, []);
+
+  useEffect(() => {
+    applyValues(initialValues);
+  }, [applyValues, initialValues]);
+
+  const reset = useCallback(() => {
+    applyValues();
+  }, [applyValues]);
 
   const buildInput = useCallback((): AddProductInput | null => {
     const trimmedName = name.trim();
@@ -45,8 +67,11 @@ export function useAddProductForm() {
       paoMonths,
       openedAt: new Date(openedAt).toISOString(),
       category,
+      imageUrl: imageUrl.trim() || undefined,
+      notes: notes.trim() || undefined,
+      lookupSource,
     };
-  }, [name, brand, barcode, paoMonths, openedAt, category]);
+  }, [name, brand, barcode, paoMonths, openedAt, category, imageUrl, notes, lookupSource]);
 
   const handleSmartFill = useCallback(async () => {
     const trimmedName = name.trim();
@@ -74,6 +99,7 @@ export function useAddProductForm() {
         result.category ??
           inferCategoryFromText(`${result.brand} ${result.name}`),
       );
+      setLookupSource('ai');
     } catch (error) {
       setSmartError(
         error instanceof Error ? error.message : 'Не удалось обработать запрос',
@@ -96,6 +122,12 @@ export function useAddProductForm() {
     setOpenedAt,
     category,
     setCategory,
+    imageUrl,
+    setImageUrl,
+    notes,
+    setNotes,
+    lookupSource,
+    setLookupSource,
     isSmartLoading,
     smartError,
     setSmartError,

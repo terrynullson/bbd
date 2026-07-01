@@ -1,4 +1,5 @@
 export const STORAGE_KEY = 'gde-moy-krem-data';
+export const STORAGE_SCHEMA_VERSION = 2;
 export const THEME_STORAGE_KEY = 'gde-moy-krem-theme';
 export const INSTALL_DISMISS_KEY = 'gde-moy-krem-install-dismissed';
 

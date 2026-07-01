@@ -5,15 +5,25 @@ import type { CosmeticItem } from '../types';
 type CosmeticsDashboardProps = {
   items: CosmeticItem[];
   onRemove: (id: string) => void;
+  onEdit: (item: CosmeticItem) => void;
 };
 
-export function CosmeticsDashboard({ items, onRemove }: CosmeticsDashboardProps) {
+export function CosmeticsDashboard({
+  items,
+  onRemove,
+  onEdit,
+}: CosmeticsDashboardProps) {
   const sorted = sortCosmeticItems(items);
 
   return (
     <div className="flex flex-col gap-3">
       {sorted.map((item) => (
-        <CosmeticCard key={item.id} item={item} onRemove={onRemove} />
+        <CosmeticCard
+          key={item.id}
+          item={item}
+          onRemove={onRemove}
+          onEdit={onEdit}
+        />
       ))}
     </div>
   );

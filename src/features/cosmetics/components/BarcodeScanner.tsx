@@ -1,6 +1,6 @@
 'use client';
 
-import { Camera, Flashlight, FlashlightOff, ScanLine, X } from 'lucide-react';
+import { Camera, Flashlight, FlashlightOff, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import {
@@ -209,9 +209,22 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-sm rounded-[20px] bg-surface p-5 shadow-[var(--shadow-modal)]">
-        <div className="absolute right-3 top-3 z-20 flex items-center gap-1">
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-5 backdrop-blur-sm"
+      onClick={() => void handleClose()}
+    >
+      <div
+        className="relative flex min-h-[390px] w-full max-w-sm items-center justify-center overflow-hidden rounded-[28px] bg-black p-5 shadow-[var(--shadow-modal)]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.72)), url('/images/hero-bg.svg')",
+          backgroundPosition: 'center',
+          backgroundSize: 'cover',
+        }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="pointer-events-none absolute inset-8 rounded-[18px] border border-white/45" />
+        <div className="absolute right-4 top-4 z-20 flex items-center gap-1">
           {torchSupported && phase === 'scanning' && (
             <Button
               type="button"
@@ -219,7 +232,7 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
               size="icon"
               onClick={() => void toggleTorch()}
               aria-label={torchOn ? 'Выключить вспышку' : 'Включить вспышку'}
-              className="h-9 w-9"
+              className="h-9 w-9 text-white hover:bg-white/10 hover:text-white"
             >
               {torchOn ? (
                 <FlashlightOff className="h-4 w-4" />
@@ -234,33 +247,26 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
             size="icon"
             onClick={() => void handleClose()}
             aria-label="Закрыть сканер"
-            className="h-9 w-9"
+            className="h-9 w-9 text-white hover:bg-white/10 hover:text-white"
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="mb-4 flex items-center gap-2 pr-20 text-sm font-medium text-muted">
-          <ScanLine className="h-4 w-4 text-accent" />
-          Сканер штрих-кодов
-        </div>
-
         {phase === 'permission' && (
-          <div className="space-y-5 p-2 text-center">
-            <div className="mx-auto flex h-44 w-full max-w-[220px] items-center justify-center rounded-[14px] border-2 border-dashed border-border bg-bg">
-              <Camera className="h-10 w-10 text-muted" />
-            </div>
-            <div>
-              <p className="font-display text-lg font-semibold text-text">
+          <div className="relative z-10 w-full max-w-[210px] rounded-[18px] bg-surface px-5 py-6 text-center shadow-[var(--shadow-modal)]">
+            <Camera className="mx-auto h-12 w-12 fill-current text-[#332720]" />
+            <div className="mt-4">
+              <p className="text-lg font-medium text-text">
                 Включить камеру
               </p>
-              <p className="mt-1 text-sm text-muted">
+              <p className="mt-1 text-xs leading-relaxed text-muted">
                 Нужен доступ к камере для сканирования штрих-кода
               </p>
             </div>
             <Button
               size="lg"
-              className="w-full rounded-[14px]"
+              className="mt-4 h-11 w-full rounded-[10px] text-sm"
               onClick={() => void startScanner()}
             >
               Разрешить
@@ -269,7 +275,7 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
         )}
 
         {phase === 'error' && error && (
-          <div className="space-y-4 p-4 text-center">
+          <div className="relative z-10 w-full max-w-[240px] space-y-4 rounded-[18px] bg-surface p-5 text-center shadow-[var(--shadow-modal)]">
             <Camera className="mx-auto h-10 w-10 text-expired" />
             <p className="text-sm font-medium text-expired">{error}</p>
             <Button size="lg" className="w-full" onClick={() => void startScanner()}>
@@ -282,11 +288,11 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
         )}
 
         {(phase === 'starting' || phase === 'scanning') && (
-          <div className="space-y-3">
-            <div className="scanner-shell overflow-hidden rounded-button border border-border bg-black">
+          <div className="relative z-10 w-full space-y-3 pt-10">
+            <div className="scanner-shell overflow-hidden rounded-[18px] border border-white/40 bg-black">
               <div id={SCANNER_ELEMENT_ID} className="scanner-viewfinder" />
             </div>
-            <div className="rounded-button bg-bg p-3 text-sm text-muted">
+            <div className="rounded-[14px] bg-white/92 p-3 text-sm text-muted backdrop-blur">
               <div className="flex items-center justify-between gap-3">
                 <span>{hint}</span>
                 <span

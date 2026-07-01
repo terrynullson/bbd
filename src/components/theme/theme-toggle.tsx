@@ -11,29 +11,47 @@ type ThemeToggleProps = {
 
 export function ThemeToggle({ className, variant = 'default' }: ThemeToggleProps) {
   const { resolvedTheme, toggleTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
       aria-label={
-        resolvedTheme === 'dark'
+        isDark
           ? 'Включить светлую тему'
           : 'Включить тёмную тему'
       }
       className={cn(
-        'inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors',
+        'inline-flex h-8 w-[58px] items-center rounded-[10px] border p-0.5 transition-colors',
         variant === 'hero'
-          ? 'border border-white/25 bg-black/20 text-white backdrop-blur-sm hover:bg-black/30'
-          : 'rounded-button border border-border bg-surface text-muted hover:border-accent/40 hover:text-accent',
+          ? 'border-white/35 bg-black/20 text-white backdrop-blur-md hover:bg-black/25'
+          : 'border-border bg-surface text-muted hover:border-accent/40',
         className,
       )}
     >
-      {resolvedTheme === 'dark' ? (
-        <Sun className="h-4 w-4" />
-      ) : (
-        <Moon className="h-4 w-4" />
-      )}
+      <span
+        className={cn(
+          'flex h-7 w-7 items-center justify-center rounded-[8px] transition-colors',
+          isDark
+            ? 'bg-white/90 text-[#3f3029] shadow-sm'
+            : 'text-white/90',
+          variant !== 'hero' && !isDark && 'text-muted',
+        )}
+      >
+        <Moon className="h-3.5 w-3.5" />
+      </span>
+      <span
+        className={cn(
+          'flex h-7 w-7 items-center justify-center rounded-[8px] transition-colors',
+          !isDark
+            ? 'bg-white/90 text-[#3f3029] shadow-sm'
+            : 'text-white/90',
+          variant !== 'hero' && isDark && 'text-muted',
+        )}
+      >
+        <Sun className="h-3.5 w-3.5" />
+      </span>
     </button>
   );
 }

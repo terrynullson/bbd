@@ -17,6 +17,12 @@ export interface CosmeticItem {
   openedAt: string;
   status: CosmeticStatus;
   category?: ProductCategory;
+  imageUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+  notes?: string;
+  lookupSource?: 'manual' | 'ai' | 'barcode' | 'open-beauty-facts';
 }
 
 export interface AddProductInput {
@@ -26,6 +32,16 @@ export interface AddProductInput {
   paoMonths: number;
   openedAt: string;
   category?: ProductCategory;
+  imageUrl?: string;
+  notes?: string;
+  lookupSource?: CosmeticItem['lookupSource'];
+}
+
+export type UpdateProductInput = AddProductInput;
+
+export interface CosmeticsStorageEnvelope {
+  schemaVersion: number;
+  items: CosmeticItem[];
 }
 
 export interface AnalyzeProductRequest {
@@ -39,6 +55,27 @@ export interface AnalyzeProductResponse {
   name: string;
   paoMonths: number;
   category?: ProductCategory;
+}
+
+export interface LookupProductResponse {
+  found: boolean;
+  brand?: string;
+  name?: string;
+  barcode?: string;
+  paoMonths?: number;
+  category?: ProductCategory;
+  source?: 'open-beauty-facts';
+}
+
+export interface ProductSuggestion {
+  id: string;
+  brand?: string;
+  name: string;
+  barcode?: string;
+  paoMonths?: number;
+  category?: ProductCategory;
+  imageUrl?: string;
+  source: 'local' | 'catalog' | 'personal';
 }
 
 export interface StatusSummary {

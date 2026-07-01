@@ -1,6 +1,6 @@
 'use client';
 
-import { Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import {
   getDaysRemaining,
@@ -13,6 +13,7 @@ import type { CosmeticItem } from '../types';
 type CosmeticCardProps = {
   item: CosmeticItem;
   onRemove: (id: string) => void;
+  onEdit: (item: CosmeticItem) => void;
 };
 
 const STATUS_LABELS = {
@@ -21,15 +22,24 @@ const STATUS_LABELS = {
   expired: 'Expired',
 } as const;
 
-export function CosmeticCard({ item, onRemove }: CosmeticCardProps) {
+export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
   const daysRemaining = getDaysRemaining(item.openedAt, item.paoMonths);
   const progress = getPaoProgress(item.openedAt, item.paoMonths);
 
   return (
     <article className="rounded-[18px] border border-border/80 bg-bg p-4">
       <div className="flex gap-3">
-        <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[14px] bg-icon-bg text-accent">
-          <ProductIllustration category={item.category} className="h-9 w-9" />
+        <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-icon-bg text-accent">
+          {item.imageUrl ? (
+            <div
+              className="h-full w-full bg-cover bg-center"
+              style={{ backgroundImage: `url(${item.imageUrl})` }}
+              aria-label={item.name}
+              role="img"
+            />
+          ) : (
+            <ProductIllustration category={item.category} className="h-9 w-9" />
+          )}
         </div>
 
         <div className="min-w-0 flex-1">
@@ -43,9 +53,19 @@ export function CosmeticCard({ item, onRemove }: CosmeticCardProps) {
               </h3>
               <p className="mt-0.5 truncate text-xs text-muted">{item.brand}</p>
             </div>
-            <Badge variant={item.status} solid className="shrink-0">
-              {STATUS_LABELS[item.status]}
-            </Badge>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <Badge variant={item.status} solid>
+                {STATUS_LABELS[item.status]}
+              </Badge>
+              <button
+                type="button"
+                onClick={() => onEdit(item)}
+                aria-label="Редактировать"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface hover:text-accent"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

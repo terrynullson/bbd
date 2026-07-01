@@ -6,6 +6,7 @@ import {
   UNKNOWN_BRAND,
 } from '@/features/cosmetics/lib/analyze-context';
 import { inferCategoryFromText } from '@/features/cosmetics/lib/categories';
+import { checkRateLimit, getRequestUserId } from '@/lib/rate-limit';
 import type { ProductCategory } from '@/features/cosmetics/types';
 
 const BBD_AI_KEY = process.env.BBD_AI_KEY;
@@ -66,6 +67,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Введите бренд, название или штрих-код для анализа' },
         { status: 400 },
+      );
+    }
+
+    const userId = await getRequestUserId(request);
+    const limit = await checkRateLimit({
+      request,
+      userId,
+      scope: userId ? 'analyze:user:day' : 'analyze:anon:hour',
+      limit: userId ? 20 : 5,
+      windowSeconds: userId ? 60 * 60 * 24 : 60 * 60,
+    });
+
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: 'Лимит умного заполнения исчерпан. Попробуйте позже.' },
+        { status: 429 },
       );
     }
 
