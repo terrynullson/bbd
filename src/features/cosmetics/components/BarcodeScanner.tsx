@@ -14,6 +14,8 @@ type BarcodeScannerProps = {
   onClose: () => void;
 };
 
+type ScannerPhase = 'permission' | 'starting' | 'scanning' | 'error';
+
 type ScannerInstance = {
   start: (
     cameraIdOrConfig: string | MediaTrackConstraints,
@@ -35,15 +37,16 @@ async function loadScannerModule() {
     'html5-qrcode'
   );
 
-  const formats = [
-    Html5QrcodeSupportedFormats.EAN_13,
-    Html5QrcodeSupportedFormats.EAN_8,
-    Html5QrcodeSupportedFormats.UPC_A,
-    Html5QrcodeSupportedFormats.UPC_E,
-    Html5QrcodeSupportedFormats.CODE_128,
-  ];
-
-  return { Html5Qrcode, formats };
+  return {
+    Html5Qrcode,
+    formats: [
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.CODE_128,
+    ],
+  };
 }
 
 async function getPreferredCamera(
@@ -61,8 +64,9 @@ async function getPreferredCamera(
 
     if (backCamera) return backCamera.id;
 
-    // На iOS метки камер часто пустые до разрешения — берём последнюю (обычно основная).
-    return cameras[cameras.length - 1]?.id ?? { facingMode: { ideal: 'environment' } };
+    return (
+      cameras[cameras.length - 1]?.id ?? { facingMode: { ideal: 'environment' } }
+    );
   } catch {
     return { facingMode: { ideal: 'environment' } };
   }
@@ -77,7 +81,7 @@ async function stopScanner(scanner: ScannerInstance | null) {
     }
     scanner.clear();
   } catch {
-    // Игнорируем ошибки при остановке уже освобождённой камеры.
+    // Камера уже освобождена.
   }
 }
 
@@ -86,15 +90,15 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
   const handledRef = useRef(false);
   const onSuccessRef = useRef(onScanSuccess);
 
-  useEffect(() => {
-    onSuccessRef.current = onScanSuccess;
-  }, [onScanSuccess]);
-
+  const [phase, setPhase] = useState<ScannerPhase>('permission');
   const [error, setError] = useState<string | null>(null);
-  const [isReady, setIsReady] = useState(false);
   const [hint, setHint] = useState('Наведите камеру на штрих-код упаковки');
   const [torchSupported, setTorchSupported] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
+
+  useEffect(() => {
+    onSuccessRef.current = onScanSuccess;
+  }, [onScanSuccess]);
 
   const handleClose = useCallback(async () => {
     await stopScanner(scannerRef.current);
@@ -118,93 +122,87 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
     }
   }, [torchOn, torchSupported]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const startScanner = async () => {
-      try {
-        if (typeof window !== 'undefined' && !window.isSecureContext) {
-          throw new Error('Camera requires secure context');
-        }
-
-        if (!navigator.mediaDevices?.getUserMedia) {
-          throw new Error('Camera API is not supported');
-        }
-
-        const { Html5Qrcode, formats } = await loadScannerModule();
-        if (cancelled) return;
-
-        const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID, {
-          formatsToSupport: formats,
-          useBarCodeDetectorIfSupported: true,
-          verbose: false,
-        }) as unknown as ScannerInstance;
-
-        scannerRef.current = scanner;
-
-        const cameraConfig = await getPreferredCamera(() =>
-          Html5Qrcode.getCameras(),
-        );
-        if (cancelled) return;
-
-        await scanner.start(
-          cameraConfig,
-          {
-            fps: 12,
-            qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-              const width = Math.min(Math.floor(viewfinderWidth * 0.88), 340);
-              const height = Math.min(
-                Math.floor(width * 0.55),
-                Math.floor(viewfinderHeight * 0.5),
-              );
-              return { width, height: Math.max(height, 90) };
-            },
-            aspectRatio: 1.777778,
-            disableFlip: false,
-            videoConstraints: {
-              facingMode: { ideal: 'environment' },
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-            },
-          },
-          (decodedText) => {
-            if (handledRef.current) return;
-
-            if (!isValidBarcode(decodedText)) {
-              setHint('Код не распознан как EAN/UPC. Поднесите штрих-код ближе.');
-              return;
-            }
-
-            handledRef.current = true;
-            void stopScanner(scannerRef.current).finally(() => {
-              scannerRef.current = null;
-              onSuccessRef.current(decodedText.trim());
-            });
-          },
-          () => {
-            // Промахи сканирования на каждом кадре — ожидаемое поведение.
-          },
-        );
-
-        if (cancelled) {
-          await stopScanner(scanner);
-          return;
-        }
-
-        const capabilities = scanner.getRunningTrackCapabilities();
-        setTorchSupported('torch' in capabilities);
-        setIsReady(true);
-      } catch (err) {
-        if (cancelled) return;
-        setError(mapCameraError(err));
-      }
-    };
-
+  const startScanner = useCallback(async () => {
+    setPhase('starting');
+    setError(null);
     handledRef.current = false;
-    void startScanner();
 
+    try {
+      if (typeof window !== 'undefined' && !window.isSecureContext) {
+        throw new Error('Camera requires secure context');
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Camera API is not supported');
+      }
+
+      await stopScanner(scannerRef.current);
+      scannerRef.current = null;
+
+      const { Html5Qrcode, formats } = await loadScannerModule();
+
+      const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID, {
+        formatsToSupport: formats,
+        useBarCodeDetectorIfSupported: true,
+        verbose: false,
+      }) as unknown as ScannerInstance;
+
+      scannerRef.current = scanner;
+
+      const cameraConfig = await getPreferredCamera(() =>
+        Html5Qrcode.getCameras(),
+      );
+
+      await scanner.start(
+        cameraConfig,
+        {
+          fps: 12,
+          qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+            const width = Math.min(Math.floor(viewfinderWidth * 0.88), 340);
+            const height = Math.min(
+              Math.floor(width * 0.55),
+              Math.floor(viewfinderHeight * 0.5),
+            );
+            return { width, height: Math.max(height, 90) };
+          },
+          aspectRatio: 1.777778,
+          disableFlip: false,
+          videoConstraints: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        },
+        (decodedText) => {
+          if (handledRef.current) return;
+
+          if (!isValidBarcode(decodedText)) {
+            setHint('Код не распознан как EAN/UPC. Поднесите штрих-код ближе.');
+            return;
+          }
+
+          handledRef.current = true;
+          void stopScanner(scannerRef.current).finally(() => {
+            scannerRef.current = null;
+            onSuccessRef.current(decodedText.trim());
+          });
+        },
+        () => {
+          // Промахи на каждом кадре — норма.
+        },
+      );
+
+      const capabilities = scanner.getRunningTrackCapabilities();
+      setTorchSupported('torch' in capabilities);
+      setPhase('scanning');
+    } catch (err) {
+      setError(mapCameraError(err));
+      setPhase('error');
+    }
+  }, []);
+
+  useEffect(() => {
     return () => {
-      cancelled = true;
       void stopScanner(scannerRef.current);
       scannerRef.current = null;
     };
@@ -214,7 +212,7 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
     <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
       <div className="relative w-full max-w-md rounded-card border border-border bg-surface p-4">
         <div className="absolute right-3 top-3 z-20 flex items-center gap-1">
-          {torchSupported && !error && (
+          {torchSupported && phase === 'scanning' && (
             <Button
               type="button"
               variant="ghost"
@@ -247,19 +245,33 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
           Сканер штрих-кодов
         </div>
 
-        {error ? (
-          <div className="p-6 text-center">
-            <Camera className="mx-auto mb-4 h-10 w-10 text-expired" />
+        {phase === 'permission' && (
+          <div className="space-y-4 p-4 text-center">
+            <Camera className="mx-auto h-12 w-12 text-accent" />
+            <p className="text-sm text-muted">
+              Для сканирования нужен доступ к камере. Нажмите кнопку ниже — iOS
+              и Safari запросят разрешение.
+            </p>
+            <Button size="lg" className="w-full" onClick={() => void startScanner()}>
+              Включить камеру
+            </Button>
+          </div>
+        )}
+
+        {phase === 'error' && error && (
+          <div className="space-y-4 p-4 text-center">
+            <Camera className="mx-auto h-10 w-10 text-expired" />
             <p className="text-sm font-medium text-expired">{error}</p>
-            <Button
-              variant="secondary"
-              className="mt-6 w-full"
-              onClick={() => void handleClose()}
-            >
+            <Button size="lg" className="w-full" onClick={() => void startScanner()}>
+              Попробовать снова
+            </Button>
+            <Button variant="secondary" className="w-full" onClick={() => void handleClose()}>
               Ввести вручную
             </Button>
           </div>
-        ) : (
+        )}
+
+        {(phase === 'starting' || phase === 'scanning') && (
           <div className="space-y-3">
             <div className="scanner-shell overflow-hidden rounded-button border border-border bg-black">
               <div id={SCANNER_ELEMENT_ID} className="scanner-viewfinder" />
@@ -268,9 +280,11 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
               <div className="flex items-center justify-between gap-3">
                 <span>{hint}</span>
                 <span
-                  className={`shrink-0 text-xs font-medium ${isReady ? 'text-fresh' : 'text-muted'}`}
+                  className={`shrink-0 text-xs font-medium ${
+                    phase === 'scanning' ? 'text-fresh' : 'text-muted'
+                  }`}
                 >
-                  {isReady ? 'Готово' : 'Запуск камеры...'}
+                  {phase === 'scanning' ? 'Сканирование' : 'Запуск...'}
                 </span>
               </div>
             </div>

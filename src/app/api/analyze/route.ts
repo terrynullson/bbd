@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   buildAnalyzeContext,
   isUnknownBrand,
+  parseAnalyzeRequest,
   UNKNOWN_BRAND,
 } from '@/features/cosmetics/lib/analyze-context';
 import { inferCategoryFromText } from '@/features/cosmetics/lib/categories';
@@ -56,11 +57,10 @@ function finalizeResult(input: {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const userBrand =
-      typeof body?.brand === 'string' ? body.brand.trim() : '';
-    const userName = typeof body?.name === 'string' ? body.name.trim() : '';
-    const userBarcode =
-      typeof body?.barcode === 'string' ? body.barcode.trim() : '';
+    const analyzeInput = parseAnalyzeRequest(body);
+    const userBrand = analyzeInput.brand?.trim() ?? '';
+    const userName = analyzeInput.name?.trim() ?? '';
+    const userBarcode = analyzeInput.barcode?.trim() ?? '';
 
     if (!userBrand && !userName && !userBarcode) {
       return NextResponse.json(
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const analyzeInput = {
+    const analyzeInputPayload = {
       brand: userBrand || undefined,
       name: userName || undefined,
       barcode: userBarcode || undefined,
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
           },
           {
             role: 'user',
-            content: buildAnalyzeContext(analyzeInput),
+            content: buildAnalyzeContext(analyzeInputPayload),
           },
         ],
       }),

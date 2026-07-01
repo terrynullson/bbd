@@ -12,6 +12,32 @@ export function hasAnalyzeInput(input: AnalyzeProductRequest): boolean {
   );
 }
 
+export function parseAnalyzeRequest(body: unknown): AnalyzeProductRequest {
+  if (!body || typeof body !== 'object') return {};
+
+  const record = body as Record<string, unknown>;
+  const brand = typeof record.brand === 'string' ? record.brand.trim() : '';
+  const name = typeof record.name === 'string' ? record.name.trim() : '';
+  const barcode =
+    typeof record.barcode === 'string' ? record.barcode.trim() : '';
+  const query = typeof record.query === 'string' ? record.query.trim() : '';
+
+  if (brand || name || barcode) {
+    return {
+      brand: brand || undefined,
+      name: name || undefined,
+      barcode: barcode || undefined,
+    };
+  }
+
+  // Совместимость со старым клиентом, который отправлял только query.
+  if (query) {
+    return { name: query };
+  }
+
+  return {};
+}
+
 export function buildAnalyzeContext(input: AnalyzeProductRequest): string {
   const lines: string[] = ['Черновик пользователя:'];
 

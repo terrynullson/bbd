@@ -8,8 +8,10 @@ import { AddProductModal } from './AddProductModal';
 import { CosmeticsDashboard } from './CosmeticsDashboard';
 import { EmptyState } from './EmptyState';
 import { InstallPrompt } from './InstallPrompt';
+import { UpdateNotice } from './UpdateNotice';
 import { summarizeStatuses } from '../lib/sort-items';
 import { useCosmetics } from '../hooks/useCosmetics';
+import { APP_VERSION } from '@/lib/constants';
 
 export function CosmeticsPage() {
   const { items, addItem, removeItem, isLoaded } = useCosmetics();
@@ -42,12 +44,16 @@ export function CosmeticsPage() {
                 {summary.expired} просрочено
               </p>
             )}
+            <p className="mt-1 text-[10px] uppercase tracking-widest text-muted/60">
+              v{APP_VERSION}
+            </p>
           </div>
           <ThemeToggle />
         </div>
       </header>
 
       <main className="mx-auto max-w-lg px-5 pt-6">
+        <UpdateNotice />
         {items.length === 0 ? (
           <EmptyState onAdd={() => setIsModalOpen(true)} />
         ) : (
