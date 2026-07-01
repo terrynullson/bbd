@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+// Новые завуалированные переменные проекта BBD
+const BBD_AI_KEY = process.env.BBD_AI_KEY;
+const BBD_AI_BASE_URL = process.env.BBD_AI_BASE_URL || 'https://api.deepseek.com/v1';
+const BBD_AI_MODEL = process.env.BBD_AI_MODEL || 'deepseek-chat';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,33 +17,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!OPENAI_API_KEY) {
+    if (!BBD_AI_KEY) {
       return NextResponse.json(
-        { error: 'OPENAI_API_KEY не задан в .env.local' },
+        { error: 'Конфигурация BBD_AI_KEY не найдена в системе' },
         { status: 500 }
       );
     }
 
-    const response = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
+    // Отправляем запрос на OpenAI-совместимый API DeepSeek
+    const response = await fetch(`${BBD_AI_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${BBD_AI_KEY}`,
       },
       body: JSON.stringify({
-        model: OPENAI_MODEL,
-        temperature: 0,
+        model: BBD_AI_MODEL,
+        temperature: 0.2, // Чуть подняли для лучшей гибкости понимания сленга
+        // DeepSeek строго требует response_format для выдачи чистого JSON
+        response_format: { type: 'json_object' }, 
         messages: [
           {
             role: 'system',
-            content: `Ты извлекаешь данные о косметическом продукте из текста пользователя.
-Верни ТОЛЬКО валидный JSON в формате:
+            content: `Ты — эксперт-модератор базы данных косметики проекта "Где Мой Крем?".
+Твоя задача — извлечь данные о косметическом продукте из текста пользователя, исправить опечатки и нормализовать их.
+
+Верни СТРОГО валидный JSON в формате:
 {"brand":"string","name":"string","paoMonths":number}
-Правила:
-- brand — бренд или "Неизвестный бренд"
-- name — краткое название продукта
-- paoMonths — срок после вскрытия в месяцах, если не указан — 12
-- Не добавляй markdown, пояснения и лишний текст.`,
+
+Правила нормализации:
+1. brand — бренд с большой буквы (например, "CeraVe", "Holika Holika") или "Неизвестный бренд".
+2. name — краткое, понятное название продукта (например, "Увлажняющий крем для лица"). Без повторения бренда.
+3. paoMonths — срок после вскрытия в месяцах. Если пользователь указал (например, "6м" или "12 месяцев"), бери его. Если не указал, используй стандарты: тушь/подводка — 6, кремы/сыворотки/SPF — 12, сухие текстуры (пудры, тени) — 24.
+
+Не добавляй markdown (\`\`\`json), пояснения и лишний текст. Только чистый JSON.`,
           },
           {
             role: 'user',
@@ -55,9 +63,9 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('OpenAI API error', data);
+      console.error('BBD AI Engine Error:', data);
       return NextResponse.json(
-        { error: 'Ошибка ИИ-сервиса' },
+        { error: 'Ошибка ИИ-сервиса ядра BBD' },
         { status: 502 }
       );
     }
@@ -68,6 +76,7 @@ export async function POST(request: NextRequest) {
     try {
       parsed = JSON.parse(content);
     } catch {
+      // Подстраховка на случай, если модель всё-таки обернула в markdown-блоки
       const match = content.match(/\{[\s\S]*\}/);
       if (match) {
         try {
@@ -78,6 +87,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Формируем финальный чистый ответ
     const brand =
       typeof parsed?.brand === 'string' && parsed.brand.trim()
         ? parsed.brand.trim()
@@ -96,7 +106,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Analyze route failed', error);
     return NextResponse.json(
-      { error: 'Не удалось обработать запрос' },
+      { error: 'Не удалось обработать запрос ядром BBD' },
       { status: 500 }
     );
   }
