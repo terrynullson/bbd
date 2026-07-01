@@ -2,13 +2,12 @@
 
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
-import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { PageHero } from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/Button';
 import { AddProductModal } from './AddProductModal';
 import { CosmeticsDashboard } from './CosmeticsDashboard';
 import { EmptyState } from './EmptyState';
 import { InstallPrompt } from './InstallPrompt';
-import { UpdateNotice } from './UpdateNotice';
 import { summarizeStatuses } from '../lib/sort-items';
 import { useCosmetics } from '../hooks/useCosmetics';
 import { APP_VERSION } from '@/lib/constants';
@@ -26,45 +25,31 @@ export function CosmeticsPage() {
   }
 
   const summary = summarizeStatuses(items);
+  const summaryLine =
+    items.length > 0
+      ? `${summary.fresh} свежих · ${summary.expiring} истекают · ${summary.expired} просрочено`
+      : null;
 
   return (
-    <div className="min-h-screen bg-bg pb-28 text-text">
-      <header className="sticky top-0 z-10 border-b border-border/70 bg-bg/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-lg items-start justify-between gap-4 px-5 pb-4 pt-8">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted">
-              Beauty shelf
-            </p>
-            <h1 className="font-display mt-1 text-3xl font-semibold tracking-tight">
-              Где мой крем
-            </h1>
-            {items.length > 0 && (
-              <p className="mt-2 text-sm text-muted">
-                {summary.fresh} свежих · {summary.expiring} истекают ·{' '}
-                {summary.expired} просрочено
-              </p>
-            )}
-            <p className="mt-1 text-[10px] uppercase tracking-widest text-muted/60">
-              v{APP_VERSION}
-            </p>
-          </div>
-          <ThemeToggle />
-        </div>
-      </header>
+    <div className="mx-auto min-h-screen max-w-lg bg-bg pb-32">
+      <PageHero summary={summaryLine} />
 
-      <main className="mx-auto max-w-lg px-5 pt-6">
-        <UpdateNotice />
+      <main className="space-y-4 px-4 pt-5">
         {items.length === 0 ? (
           <EmptyState onAdd={() => setIsModalOpen(true)} />
         ) : (
           <CosmeticsDashboard items={items} onRemove={removeItem} />
         )}
+
+        <p className="pt-2 text-center text-[10px] uppercase tracking-[0.2em] text-muted/70">
+          v{APP_VERSION}
+        </p>
       </main>
 
       {items.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-bg/95 p-4 backdrop-blur-md">
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border/60 bg-bg/80 p-4 backdrop-blur-xl">
           <div className="mx-auto max-w-lg">
-            <Button size="lg" className="w-full" onClick={() => setIsModalOpen(true)}>
+            <Button size="lg" className="w-full rounded-[14px]" onClick={() => setIsModalOpen(true)}>
               <Plus className="h-5 w-5" />
               Добавить продукт
             </Button>

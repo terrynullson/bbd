@@ -1,20 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f7f3ee;
+  --bg: #f5f2ed;
   --surface: #ffffff;
   --text: #2c2420;
   --muted: #8a7f78;
-  --border: #e8e0d8;
-  --accent: #c4715b;
-  --accent-hover: #b5634f;
+  --border: #ebe4dc;
+  --accent: #c17d65;
+  --accent-hover: #b06f58;
   --accent-foreground: #fffaf7;
-  --fresh: #5b9a8b;
-  --expiring: #d4a04a;
-  --expired: #c45b5b;
-  --shadow-card: 0 1px 3px rgba(44, 36, 32, 0.08);
-  --shadow-button: 0 8px 24px rgba(196, 113, 91, 0.22);
-  --shadow-modal: 0 24px 48px rgba(44, 36, 32, 0.12);
+  --fresh: #76a599;
+  --expiring: #c09c5a;
+  --expired: #c46d62;
+  --icon-bg: #f0ebe4;
+  --shadow-card: 0 4px 12px rgba(44, 36, 32, 0.06);
+  --shadow-button: 0 8px 20px rgba(193, 125, 101, 0.28);
+  --shadow-modal: 0 24px 48px rgba(44, 36, 32, 0.14);
 }
 
 .dark {
@@ -29,8 +30,9 @@
   --fresh: #7eb7a8;
   --expiring: #e0b35f;
   --expired: #dd7a7a;
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.28);
-  --shadow-button: 0 8px 24px rgba(216, 137, 114, 0.18);
+  --icon-bg: #2a231f;
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.28);
+  --shadow-button: 0 8px 20px rgba(216, 137, 114, 0.18);
   --shadow-modal: 0 24px 48px rgba(0, 0, 0, 0.35);
 }
 
@@ -46,8 +48,10 @@
   --color-fresh: var(--fresh);
   --color-expiring: var(--expiring);
   --color-expired: var(--expired);
-  --radius-card: 16px;
-  --radius-button: 12px;
+  --color-icon-bg: var(--icon-bg);
+  --radius-card: 20px;
+  --radius-button: 14px;
+  --radius-sheet: 28px;
   --font-sans: var(--font-dm-sans);
   --font-display: var(--font-fraunces);
 }
@@ -84,14 +88,14 @@ body {
 
 .scanner-viewfinder {
   width: 100%;
-  min-height: 280px;
+  min-height: 220px;
 }
 
 .scanner-viewfinder video {
   display: block;
   width: 100% !important;
   height: auto !important;
-  max-height: 360px;
+  max-height: 320px;
   object-fit: cover;
   border-radius: 0;
 }

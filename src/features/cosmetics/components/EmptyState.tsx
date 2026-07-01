@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { ProductIllustration } from './ProductIllustration';
 import { Button } from '@/components/ui/Button';
 
 type EmptyStateProps = {
@@ -7,21 +7,19 @@ type EmptyStateProps = {
 
 export function EmptyState({ onAdd }: EmptyStateProps) {
   return (
-    <div className="mx-auto mt-16 flex max-w-sm flex-col items-center text-center">
-      <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-card border border-border bg-surface shadow-[var(--shadow-card)]">
-        <div className="h-10 w-10 rounded-full bg-accent/15" />
+    <div className="rounded-card bg-surface p-8 text-center shadow-[var(--shadow-card)]">
+      <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-accent text-white shadow-[var(--shadow-button)]">
+        <ProductIllustration category="cream" className="h-9 w-9 text-white" />
       </div>
 
       <h2 className="font-display text-2xl font-semibold text-text">
         Полка пока пуста
       </h2>
-      <p className="mt-3 text-sm leading-relaxed text-muted">
-        Добавьте первый продукт — мы посчитаем срок после вскрытия и напомним,
-        когда пора обновить уход.
+      <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-muted">
+        Добавьте первый продукт — мы посчитаем срок после вскрытия.
       </p>
 
-      <Button size="lg" className="mt-8 w-full" onClick={onAdd}>
-        <Plus className="h-5 w-5" />
+      <Button size="lg" className="mt-6 w-full" onClick={onAdd}>
         Добавить продукт
       </Button>
     </div>

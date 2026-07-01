@@ -209,8 +209,8 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-card border border-border bg-surface p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+      <div className="relative w-full max-w-sm rounded-[20px] bg-surface p-5 shadow-[var(--shadow-modal)]">
         <div className="absolute right-3 top-3 z-20 flex items-center gap-1">
           {torchSupported && phase === 'scanning' && (
             <Button
@@ -246,14 +246,24 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
         </div>
 
         {phase === 'permission' && (
-          <div className="space-y-4 p-4 text-center">
-            <Camera className="mx-auto h-12 w-12 text-accent" />
-            <p className="text-sm text-muted">
-              Для сканирования нужен доступ к камере. Нажмите кнопку ниже — iOS
-              и Safari запросят разрешение.
-            </p>
-            <Button size="lg" className="w-full" onClick={() => void startScanner()}>
-              Включить камеру
+          <div className="space-y-5 p-2 text-center">
+            <div className="mx-auto flex h-44 w-full max-w-[220px] items-center justify-center rounded-[14px] border-2 border-dashed border-border bg-bg">
+              <Camera className="h-10 w-10 text-muted" />
+            </div>
+            <div>
+              <p className="font-display text-lg font-semibold text-text">
+                Включить камеру
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                Нужен доступ к камере для сканирования штрих-кода
+              </p>
+            </div>
+            <Button
+              size="lg"
+              className="w-full rounded-[14px]"
+              onClick={() => void startScanner()}
+            >
+              Разрешить
             </Button>
           </div>
         )}

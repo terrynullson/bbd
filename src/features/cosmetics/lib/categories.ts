@@ -1,12 +1,12 @@
 import type { ProductCategory } from '../types';
 
 const CATEGORY_LABELS: Record<ProductCategory, string> = {
-  cream: 'Крем',
-  serum: 'Сыворотка',
-  toner: 'Тоник',
-  cleanser: 'Очищение',
-  mask: 'Маска',
-  other: 'Уход',
+  cream: 'CREAM',
+  serum: 'SERUM',
+  toner: 'TONER',
+  cleanser: 'CLEANSER',
+  mask: 'MASK',
+  other: 'OTHER',
 };
 
 export function getCategoryLabel(category: ProductCategory = 'other'): string {
@@ -16,11 +16,11 @@ export function getCategoryLabel(category: ProductCategory = 'other'): string {
 export function inferCategoryFromText(text: string): ProductCategory {
   const lower = text.toLowerCase();
 
-  if (/сыворотк|serum|ампул/.test(lower)) return 'serum';
-  if (/тоник|toner|эссенц/.test(lower)) return 'toner';
-  if (/пенк|гель.*умыв|cleanser|мицелляр/.test(lower)) return 'cleanser';
-  if (/маск|mask|патч/.test(lower)) return 'mask';
-  if (/крем|лосьон|cream|moistur/.test(lower)) return 'cream';
+  if (/сыворотк|serum|ампул|niacinamide/i.test(lower)) return 'serum';
+  if (/тоник|toner|эссенц/i.test(lower)) return 'toner';
+  if (/пенк|гель.*умыв|cleanser|мицелляр/i.test(lower)) return 'cleanser';
+  if (/маск|mask|патч/i.test(lower)) return 'mask';
+  if (/крем|лосьон|cream|moistur/i.test(lower)) return 'cream';
 
   return 'other';
 }

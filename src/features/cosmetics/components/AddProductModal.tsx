@@ -1,13 +1,12 @@
 'use client';
 
-import { Camera } from 'lucide-react';
+import { Camera, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { BarcodeScanner } from './BarcodeScanner';
 import { PaoSelector } from './PaoSelector';
-import { SmartFillButton } from './SmartFillButton';
 import { useAddProductForm } from '../hooks/useAddProductForm';
 import type { AddProductInput } from '../types';
 
@@ -32,82 +31,74 @@ export function AddProductModal({ onClose, onSubmit }: AddProductModalProps) {
 
   return (
     <>
-      <Modal title="Новый продукт" onClose={onClose}>
+      <Modal onClose={onClose}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className="mb-2 block pl-1 text-sm font-medium text-muted">
-              Бренд
-            </label>
-            <Input
-              placeholder="Например, CeraVe"
-              value={form.brand}
-              onChange={(e) => {
-                form.setBrand(e.target.value);
-                if (form.smartError) form.setSmartError('');
-              }}
-            />
-          </div>
+          <Input
+            placeholder="Бренд"
+            value={form.brand}
+            onChange={(e) => {
+              form.setBrand(e.target.value);
+              if (form.smartError) form.setSmartError('');
+            }}
+          />
 
-          <div>
-            <label className="mb-2 block pl-1 text-sm font-medium text-muted">
-              Название продукта
-            </label>
-            <Input
-              required
-              placeholder="Увлажняющий крем"
-              value={form.name}
-              onChange={(e) => {
-                form.setName(e.target.value);
-                if (form.smartError) form.setSmartError('');
-              }}
-            />
-          </div>
+          <Input
+            required
+            placeholder="Название продукта"
+            value={form.name}
+            onChange={(e) => {
+              form.setName(e.target.value);
+              if (form.smartError) form.setSmartError('');
+            }}
+          />
 
-          <div className="rounded-button border border-border bg-bg p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-text">Умное заполнение</p>
+          <div className="rounded-[14px] bg-bg p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface text-accent shadow-[var(--shadow-card)]">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-text">Умное заполнение</p>
                 <p className="mt-1 text-xs leading-relaxed text-muted">
-                  Исправит опечатки, нормализует бренд и дополнит название на
-                  основе уже введённых полей.
+                  Исправит опечатки и дополнит поля на основе введённых данных.
                 </p>
               </div>
-              <SmartFillButton
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
                 onClick={form.handleSmartFill}
-                disabled={!form.canSmartFill}
-                loading={form.isSmartLoading}
-              />
+                disabled={!form.canSmartFill || form.isSmartLoading}
+                className="shrink-0"
+              >
+                {form.isSmartLoading ? '...' : 'Заполнить'}
+              </Button>
             </div>
             {form.smartError && (
               <p className="mt-3 text-sm text-expired">{form.smartError}</p>
             )}
           </div>
 
-          <div>
-            <label className="mb-2 block pl-1 text-sm font-medium text-muted">
-              Штрих-код
-            </label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="4600..."
-                value={form.barcode}
-                onChange={(e) => form.setBarcode(e.target.value)}
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                size="icon"
-                onClick={() => setIsScannerOpen(true)}
-                aria-label="Сканировать штрих-код"
-              >
-                <Camera className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Штрих-код"
+              value={form.barcode}
+              onChange={(e) => form.setBarcode(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              onClick={() => setIsScannerOpen(true)}
+              aria-label="Сканировать штрих-код"
+            >
+              <Camera className="h-4 w-4" />
+            </Button>
           </div>
 
           <div>
-            <label className="mb-2 block pl-1 text-sm font-medium text-muted">
+            <label className="mb-2 block text-xs font-medium uppercase tracking-[0.12em] text-muted">
               Дата вскрытия
             </label>
             <Input
@@ -119,13 +110,13 @@ export function AddProductModal({ onClose, onSubmit }: AddProductModalProps) {
           </div>
 
           <div>
-            <label className="mb-2 block pl-1 text-sm font-medium text-muted">
-              Срок после вскрытия (PAO)
+            <label className="mb-3 block text-xs font-medium uppercase tracking-[0.12em] text-muted">
+              Срок после вскрытия
             </label>
             <PaoSelector value={form.paoMonths} onChange={form.setPaoMonths} />
           </div>
 
-          <Button type="submit" size="lg" className="mt-2 w-full">
+          <Button type="submit" size="lg" className="mt-1 w-full rounded-[14px]">
             Сохранить
           </Button>
         </form>
