@@ -12,6 +12,7 @@ import { readCosmetics, writeCosmetics } from '../lib/storage';
 import type { AddProductInput, CosmeticItem, UpdateProductInput } from '../types';
 
 const MAX_ACTIVE_PRODUCTS = 300;
+const PUSH_DEBOUNCE_MS = 600;
 
 type SyncStatus = 'local' | 'syncing' | 'synced' | 'offline' | 'error';
 
@@ -26,17 +27,31 @@ export function useCosmetics() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+  const [syncError, setSyncError] = useState('');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(getOnlineStatus);
   const [canWriteStorage, setCanWriteStorage] = useState(true);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('local');
+  const [syncAttempt, setSyncAttempt] = useState(0);
   const mergedUserRef = useRef<string | null>(null);
-  const skipNextCloudPushRef = useRef(false);
+  const suppressPushRef = useRef(false);
+  const itemsRef = useRef(items);
+  const wasOfflineRef = useRef(false);
+  const pushGenerationRef = useRef(0);
+
+  itemsRef.current = items;
 
   const activeItems = useMemo(
     () => items.filter((item) => !item.deletedAt),
     [items],
   );
+
+  const canSync =
+    isLoaded &&
+    isOnline &&
+    supabase &&
+    user &&
+    authStatus === 'signed-in';
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -67,9 +82,18 @@ export function useCosmetics() {
   }, [items, isLoaded, canWriteStorage]);
 
   useEffect(() => {
+    if (authStatus === 'signed-out') {
+      mergedUserRef.current = null;
+      setSyncStatus('local');
+      setSyncError('');
+    }
+  }, [authStatus]);
+
+  useEffect(() => {
     if (!isLoaded) return;
 
     if (!isOnline) {
+      wasOfflineRef.current = true;
       setSyncStatus('offline');
       return;
     }
@@ -83,18 +107,26 @@ export function useCosmetics() {
 
     let cancelled = false;
     setSyncStatus('syncing');
+    setSyncError('');
 
     void fetchCloudProducts(supabase)
-      .then((cloudItems) => {
+      .then(async (cloudItems) => {
         if (cancelled) return;
-        skipNextCloudPushRef.current = true;
-        setItems((current) => mergeProducts(current, cloudItems));
+
+        const merged = mergeProducts(itemsRef.current, cloudItems);
+        suppressPushRef.current = true;
+        setItems(merged);
         mergedUserRef.current = user.id;
+
+        await upsertCloudProducts(supabase, user.id, merged);
+        if (cancelled) return;
+
         setSyncStatus('synced');
+        setSyncError('');
       })
       .catch(() => {
         if (!cancelled) {
-          setError('Не удалось загрузить облачные продукты');
+          setSyncError('Не удалось синхронизировать с облаком');
           setSyncStatus('error');
         }
       });
@@ -102,33 +134,60 @@ export function useCosmetics() {
     return () => {
       cancelled = true;
     };
-  }, [authStatus, isLoaded, isOnline, supabase, user]);
+  }, [authStatus, isLoaded, isOnline, supabase, syncAttempt, user]);
 
   useEffect(() => {
-    if (!isLoaded || !isOnline || !supabase || !user || authStatus !== 'signed-in') {
+    if (!canSync) return;
+
+    if (suppressPushRef.current) {
+      suppressPushRef.current = false;
       return;
     }
 
-    if (skipNextCloudPushRef.current) {
-      skipNextCloudPushRef.current = false;
-      return;
-    }
-
+    const generation = ++pushGenerationRef.current;
     const timeout = setTimeout(() => {
+      if (generation !== pushGenerationRef.current) return;
+
       setSyncStatus('syncing');
-      void upsertCloudProducts(supabase, user.id, items)
+      setSyncError('');
+
+      void upsertCloudProducts(supabase, user.id, itemsRef.current)
         .then(() => {
+          if (generation !== pushGenerationRef.current) return;
           setSyncStatus('synced');
-          setError('');
+          setSyncError('');
         })
         .catch(() => {
+          if (generation !== pushGenerationRef.current) return;
+          setSyncError('Не удалось синхронизировать с облаком');
           setSyncStatus('error');
-          setError('Не удалось синхронизировать продукты');
         });
-    }, 600);
+    }, PUSH_DEBOUNCE_MS);
 
     return () => clearTimeout(timeout);
-  }, [authStatus, isLoaded, isOnline, items, supabase, user]);
+  }, [authStatus, canSync, items, supabase, user]);
+
+  useEffect(() => {
+    if (!canSync || !wasOfflineRef.current) return;
+
+    wasOfflineRef.current = false;
+    const generation = ++pushGenerationRef.current;
+
+    setSyncStatus('syncing');
+    setSyncError('');
+
+    void upsertCloudProducts(supabase, user.id, itemsRef.current)
+      .then(() => {
+        if (generation !== pushGenerationRef.current) return;
+        setSyncStatus('synced');
+        setSyncError('');
+      })
+      .catch(() => {
+        if (generation !== pushGenerationRef.current) return;
+        setSyncError('Не удалось синхронизировать с облаком');
+        setSyncStatus('error');
+      });
+  }, [canSync, isOnline, supabase, user]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -142,6 +201,32 @@ export function useCosmetics() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  const retrySync = useCallback(() => {
+    if (!supabase || !user || authStatus !== 'signed-in') return;
+
+    const generation = ++pushGenerationRef.current;
+    setSyncError('');
+    setSyncStatus('syncing');
+
+    if (mergedUserRef.current === user.id) {
+      void upsertCloudProducts(supabase, user.id, itemsRef.current)
+        .then(() => {
+          if (generation !== pushGenerationRef.current) return;
+          setSyncStatus('synced');
+          setSyncError('');
+        })
+        .catch(() => {
+          if (generation !== pushGenerationRef.current) return;
+          setSyncError('Не удалось синхронизировать с облаком');
+          setSyncStatus('error');
+        });
+      return;
+    }
+
+    mergedUserRef.current = null;
+    setSyncAttempt((attempt) => attempt + 1);
+  }, [authStatus, supabase, user]);
 
   const addItem = useCallback((input: AddProductInput) => {
     setCanWriteStorage(true);
@@ -225,9 +310,11 @@ export function useCosmetics() {
     isLoaded,
     isSaving,
     error,
+    syncError,
     lastSavedAt,
     isOnline,
     syncStatus,
+    retrySync,
     user,
   };
 }

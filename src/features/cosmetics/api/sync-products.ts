@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { calculateStatus } from '../lib/calculate-status';
 import type { CosmeticItem } from '../types';
+import { waitForAuthSession, withSyncRetry } from './sync-retry';
 
 type ProductRow = {
   id: string;
@@ -84,15 +85,26 @@ export function mergeProducts(
   );
 }
 
-export async function fetchCloudProducts(supabase: SupabaseClient) {
-  const { data, error } = await supabase
-    .from('user_products')
-    .select('*')
-    .order('client_updated_at', { ascending: false })
-    .limit(500);
+async function assertAuthSession(supabase: SupabaseClient) {
+  const session = await waitForAuthSession(supabase);
+  if (!session) {
+    throw new Error('auth session not ready');
+  }
+}
 
-  if (error) throw error;
-  return ((data ?? []) as ProductRow[]).map(fromRow);
+export async function fetchCloudProducts(supabase: SupabaseClient) {
+  await assertAuthSession(supabase);
+
+  return withSyncRetry('fetch', async () => {
+    const { data, error } = await supabase
+      .from('user_products')
+      .select('*')
+      .order('client_updated_at', { ascending: false })
+      .limit(500);
+
+    if (error) throw error;
+    return ((data ?? []) as ProductRow[]).map(fromRow);
+  });
 }
 
 export async function upsertCloudProducts(
@@ -102,9 +114,13 @@ export async function upsertCloudProducts(
 ) {
   if (items.length === 0) return;
 
-  const { error } = await supabase
-    .from('user_products')
-    .upsert(items.map((item) => toRow(item, userId)), { onConflict: 'id' });
+  await assertAuthSession(supabase);
 
-  if (error) throw error;
+  return withSyncRetry('push', async () => {
+    const { error } = await supabase
+      .from('user_products')
+      .upsert(items.map((item) => toRow(item, userId)), { onConflict: 'id' });
+
+    if (error) throw error;
+  });
 }

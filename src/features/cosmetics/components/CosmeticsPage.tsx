@@ -24,9 +24,12 @@ export function CosmeticsPage() {
     isLoaded,
     isSaving,
     error,
+    syncError,
     lastSavedAt,
     isOnline,
     syncStatus,
+    retrySync,
+    user,
   } = useCosmetics();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CosmeticItem | null>(null);
@@ -90,19 +93,23 @@ export function CosmeticsPage() {
     items.length > 0
       ? 'bottom-[calc(6.25rem+var(--safe-bottom))]'
       : 'bottom-[calc(1rem+var(--safe-bottom))]';
+  const isSignedIn = Boolean(user);
   const storageStatus = !isOnline
     ? 'Офлайн · изменения сохраняются на устройстве'
     : error
       ? error
-      : isSaving
-        ? 'Сохраняем...'
-        : syncStatus === 'syncing'
-          ? 'Синхронизируем с облаком...'
-          : syncStatus === 'synced'
+      : syncStatus === 'syncing'
+        ? 'Синхронизируем с облаком...'
+        : syncError
+          ? syncError
+          : syncStatus === 'synced' && isSignedIn
             ? 'Синхронизировано с облаком'
-            : lastSavedAt
-              ? 'Сохранено на устройстве'
-              : 'Локальное хранение готово';
+            : isSaving
+              ? 'Сохраняем...'
+              : lastSavedAt
+                ? 'Сохранено на устройстве'
+                : 'Локальное хранение готово';
+  const showSyncRetry = Boolean(syncError && isOnline && isSignedIn);
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-lg bg-bg">
@@ -127,10 +134,22 @@ export function CosmeticsPage() {
 
         <p
           className={`mt-6 text-center text-xs ${
-            error ? 'text-expired' : 'text-muted/70'
+            error || syncError ? 'text-expired' : 'text-muted/70'
           }`}
         >
           {storageStatus}
+          {showSyncRetry && (
+            <>
+              {' · '}
+              <button
+                type="button"
+                onClick={retrySync}
+                className="font-semibold text-text underline underline-offset-2"
+              >
+                Повторить
+              </button>
+            </>
+          )}
         </p>
 
         <p className="mt-2 pb-2 text-center text-[10px] uppercase tracking-[0.2em] text-muted/60">
