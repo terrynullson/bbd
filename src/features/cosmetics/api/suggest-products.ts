@@ -16,7 +16,7 @@ export async function fetchProductSuggestions({
   if (brand) params.set('brand', brand);
 
   const headers: HeadersInit = {};
-  const supabase = getSupabaseBrowserClient();
+  const supabase = await getSupabaseBrowserClient();
   const { data } = supabase
     ? await supabase.auth.getSession()
     : { data: { session: null } };

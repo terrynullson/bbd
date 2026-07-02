@@ -8,15 +8,15 @@ export default function AuthCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
+    void getSupabaseBrowserClient().then((supabase) => {
+      if (!supabase) {
+        router.replace('/');
+        return;
+      }
 
-    if (!supabase) {
-      router.replace('/');
-      return;
-    }
-
-    void supabase.auth.getSession().finally(() => {
-      router.replace('/');
+      void supabase.auth.getSession().finally(() => {
+        router.replace('/');
+      });
     });
   }, [router]);
 

@@ -11,7 +11,7 @@ export async function lookupProductByBarcode(
   }
 
   const headers: HeadersInit = {};
-  const supabase = getSupabaseBrowserClient();
+  const supabase = await getSupabaseBrowserClient();
   const { data: sessionData } = supabase
     ? await supabase.auth.getSession()
     : { data: { session: null } };

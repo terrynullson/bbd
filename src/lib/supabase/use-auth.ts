@@ -1,6 +1,6 @@
 'use client';
 
-import type { User } from '@supabase/supabase-js';
+import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from './client';
 
@@ -9,13 +9,29 @@ type AuthStatus = 'disabled' | 'loading' | 'signed-in' | 'signed-out';
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<AuthStatus>('loading');
-  const supabase = getSupabaseBrowserClient();
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
 
   useEffect(() => {
-    if (!supabase) {
-      setStatus('disabled');
-      return;
-    }
+    let mounted = true;
+
+    void getSupabaseBrowserClient().then((client) => {
+      if (!mounted) return;
+
+      if (!client) {
+        setStatus('disabled');
+        return;
+      }
+
+      setSupabase(client);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) return;
 
     let mounted = true;
 

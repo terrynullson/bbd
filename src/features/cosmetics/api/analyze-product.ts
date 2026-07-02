@@ -21,7 +21,7 @@ export async function analyzeProduct(
   }
 
   const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  const supabase = getSupabaseBrowserClient();
+  const supabase = await getSupabaseBrowserClient();
   const { data: sessionData } = supabase
     ? await supabase.auth.getSession()
     : { data: { session: null } };
