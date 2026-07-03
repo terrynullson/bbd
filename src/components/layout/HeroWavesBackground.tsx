@@ -1,53 +1,107 @@
 'use client';
 
-export function HeroWavesBackground() {
+import { useEffect, useState } from 'react';
+
+function PillAnimate({
+  values,
+  dur,
+  reduceMotion,
+}: {
+  values: string;
+  dur: string;
+  reduceMotion: boolean;
+}) {
+  if (reduceMotion) return null;
+
   return (
-    <div
-      className="absolute inset-0 overflow-hidden"
-      style={{ background: 'var(--hero-overscroll)' }}
-      aria-hidden
-    >
+    <animate
+      attributeName="y"
+      values={values}
+      dur={dur}
+      repeatCount="indefinite"
+    />
+  );
+}
+
+export function HeroWavesBackground() {
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReduceMotion(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden" aria-hidden>
       <svg
         className="absolute inset-0 h-full w-full"
-        viewBox="0 0 800 220"
+        viewBox="0 0 1000 300"
         preserveAspectRatio="xMidYMid slice"
-        fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <g className="hero-wave-group hero-wave-group-1" opacity="0.55">
-          <path
-            d="M-40 108C80 88 160 128 280 104C400 80 480 120 600 98C680 84 760 110 840 96"
-            stroke="#f0c5b4"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-          />
-        </g>
-        <g className="hero-wave-group hero-wave-group-2" opacity="0.42">
-          <path
-            d="M-60 132C100 112 200 152 320 128C440 104 520 148 640 122C720 106 800 134 860 118"
-            stroke="#e8d4c0"
-            strokeWidth="1"
-            strokeLinecap="round"
-          />
-        </g>
-        <g className="hero-wave-group hero-wave-group-3" opacity="0.32">
-          <path
-            d="M-20 84C120 64 220 104 340 80C460 56 540 96 660 74C740 60 820 86 880 72"
-            stroke="#d4b8a4"
-            strokeWidth="0.85"
-            strokeLinecap="round"
-          />
-        </g>
-        <g className="hero-wave-group hero-wave-group-4" opacity="0.22">
-          <path
-            d="M-80 156C60 136 180 176 300 152C420 128 500 168 620 144C700 128 780 156 900 140"
-            stroke="#f5e6dc"
-            strokeWidth="0.7"
-            strokeLinecap="round"
-          />
+        <defs>
+          <filter id="hero-soft-blur" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" />
+          </filter>
+        </defs>
+
+        <rect width="100%" height="100%" fill="var(--hero-overscroll)" />
+
+        <g fill="var(--hero-pills)" filter="url(#hero-soft-blur)">
+          <rect x="40" y="-50" width="110" height="280" rx="55">
+            <PillAnimate
+              values="-50; 20; -50"
+              dur="6s"
+              reduceMotion={reduceMotion}
+            />
+          </rect>
+
+          <rect x="210" y="70" width="110" height="240" rx="55">
+            <PillAnimate
+              values="70; 10; 70"
+              dur="7.5s"
+              reduceMotion={reduceMotion}
+            />
+          </rect>
+
+          <rect x="380" y="-20" width="110" height="320" rx="55">
+            <PillAnimate
+              values="-20; -80; -20"
+              dur="5s"
+              reduceMotion={reduceMotion}
+            />
+          </rect>
+
+          <rect x="550" y="60" width="110" height="260" rx="55">
+            <PillAnimate
+              values="60; -10; 60"
+              dur="10s"
+              reduceMotion={reduceMotion}
+            />
+          </rect>
+
+          <rect x="720" y="-30" width="110" height="290" rx="55">
+            <PillAnimate
+              values="-30; 40; -30"
+              dur="15s"
+              reduceMotion={reduceMotion}
+            />
+          </rect>
+
+          <rect x="890" y="40" width="110" height="250" rx="55">
+            <PillAnimate
+              values="40; -20; 40"
+              dur="6s"
+              reduceMotion={reduceMotion}
+            />
+          </rect>
         </g>
       </svg>
-      <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/25 to-black/55" />
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/25 to-transparent" />
     </div>
   );
 }

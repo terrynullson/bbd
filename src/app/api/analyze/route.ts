@@ -99,20 +99,22 @@ export async function POST(request: NextRequest) {
       barcode: userBarcode || undefined,
     };
 
-    const response = await fetch(`${BBD_AI_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${BBD_AI_KEY}`,
-      },
-      body: JSON.stringify({
-        model: BBD_AI_MODEL,
-        temperature: 0.2,
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content: `Ты — эксперт по косметике в проекте "Где Мой Крем?".
+    let response: Response;
+    try {
+      response = await fetch(`${BBD_AI_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${BBD_AI_KEY}`,
+        },
+        body: JSON.stringify({
+          model: BBD_AI_MODEL,
+          temperature: 0.2,
+          response_format: { type: 'json_object' },
+          messages: [
+            {
+              role: 'system',
+              content: `Ты — эксперт по косметике в проекте "Где Мой Крем?".
 Пользователь добавляет продукт вручную. Поля формы — его черновик: опечатки, транслит, сленг и неполные названия допустимы.
 
 Твоя задача — НОРМАЛИЗОВАТЬ и ДОПОЛНИТЬ данные. Не копируй ввод дословно, если его можно улучшить.
@@ -136,6 +138,12 @@ export async function POST(request: NextRequest) {
         ],
       }),
     });
+    } catch {
+      return NextResponse.json(
+        { error: 'ИИ-сервис временно недоступен' },
+        { status: 502 },
+      );
+    }
 
     const data = await response.json();
 

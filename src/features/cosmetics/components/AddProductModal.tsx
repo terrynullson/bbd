@@ -146,9 +146,9 @@ export function AddProductModal({
     }
 
     const timeout = setTimeout(() => {
-      void fetchProductSuggestions({ type: 'brand', query: form.brand }).then(
-        setRemoteBrandSuggestions,
-      );
+      void fetchProductSuggestions({ type: 'brand', query: form.brand })
+        .then(setRemoteBrandSuggestions)
+        .catch(() => setRemoteBrandSuggestions([]));
     }, 250);
 
     return () => clearTimeout(timeout);
@@ -165,7 +165,9 @@ export function AddProductModal({
         type: 'product',
         query: form.name,
         brand: form.brand,
-      }).then(setRemoteProductSuggestions);
+      })
+        .then(setRemoteProductSuggestions)
+        .catch(() => setRemoteProductSuggestions([]));
     }, 250);
 
     return () => clearTimeout(timeout);

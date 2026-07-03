@@ -156,7 +156,7 @@ export function CosmeticsPage() {
 
       <main
         ref={mainRef}
-        className="content-enter relative z-10 -mt-5 flex-1 overflow-y-auto overscroll-y-none rounded-t-[28px] bg-surface px-4 pt-6 shadow-[0_-8px_32px_rgba(44,36,32,0.06)] pb-[calc(5.5rem+var(--safe-bottom))]"
+        className="content-enter relative z-10 -mt-6 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-none rounded-t-[var(--radius-sheet)] bg-surface px-4 pt-6 shadow-[0_-8px_32px_rgba(44,36,32,0.06)] pb-[calc(5.5rem+var(--safe-bottom))]"
       >
         {items.length === 0 ? (
           <EmptyState />

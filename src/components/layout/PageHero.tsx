@@ -14,7 +14,7 @@ export function PageHero({ summary }: PageHeroProps) {
 
       <div className="safe-top relative px-5 pb-8 pt-2">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/80">
+          <p className="text-[11px] font-medium tracking-[0.04em] text-white/80">
             Твоя забота о себе
           </p>
           <ThemeToggle variant="hero" />

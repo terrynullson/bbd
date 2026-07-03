@@ -30,17 +30,24 @@ export async function analyzeProduct(
     headers.Authorization = `Bearer ${sessionData.session.access_token}`;
   }
 
-  const response = await fetch('/api/analyze', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-  });
+  try {
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
 
-  const data = await response.json();
+    const data = await response.json();
 
-  if (!response.ok) {
-    throw new Error(data?.error || 'Не удалось получить ответ от ИИ');
+    if (!response.ok) {
+      throw new Error(data?.error || 'Не удалось получить ответ от ИИ');
+    }
+
+    return data as AnalyzeProductResponse;
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error('Нет связи с сервером. Проверьте подключение.');
+    }
+    throw error;
   }
-
-  return data as AnalyzeProductResponse;
 }

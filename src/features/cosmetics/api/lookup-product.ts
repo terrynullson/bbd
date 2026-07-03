@@ -20,15 +20,22 @@ export async function lookupProductByBarcode(
     headers.Authorization = `Bearer ${sessionData.session.access_token}`;
   }
 
-  const response = await fetch(
-    `/api/products/lookup?barcode=${encodeURIComponent(normalizedBarcode)}`,
-    { headers },
-  );
-  const data = await response.json();
+  try {
+    const response = await fetch(
+      `/api/products/lookup?barcode=${encodeURIComponent(normalizedBarcode)}`,
+      { headers },
+    );
+    const data = await response.json();
 
-  if (!response.ok) {
-    throw new Error(data?.error || 'Не удалось проверить штрих-код');
+    if (!response.ok) {
+      throw new Error(data?.error || 'Не удалось проверить штрих-код');
+    }
+
+    return data as LookupProductResponse;
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error('Нет связи с сервером. Проверьте подключение.');
+    }
+    throw error;
   }
-
-  return data as LookupProductResponse;
 }

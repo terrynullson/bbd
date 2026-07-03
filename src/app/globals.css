@@ -17,6 +17,7 @@
   --shadow-button: 0 8px 20px rgba(193, 125, 101, 0.28);
   --shadow-modal: 0 24px 48px rgba(44, 36, 32, 0.14);
   --hero-overscroll: #6b5144;
+  --hero-pills: #81695b;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -38,6 +39,7 @@
   --shadow-button: 0 8px 20px rgba(216, 137, 114, 0.18);
   --shadow-modal: 0 24px 48px rgba(0, 0, 0, 0.35);
   --hero-overscroll: #3b2d27;
+  --hero-pills: #5a4840;
 }
 
 @theme inline {
@@ -237,73 +239,8 @@ input[type='date'] {
   .card-enter,
   .toast-enter,
   .fab-button,
-  .nav-bar,
-  .hero-wave-group {
+  .nav-bar {
     animation: none !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-@keyframes hero-wave-drift-1 {
-  0%,
-  100% {
-    transform: translateX(0) translateY(0);
-  }
-
-  50% {
-    transform: translateX(-2.5%) translateY(3px);
-  }
-}
-
-@keyframes hero-wave-drift-2 {
-  0%,
-  100% {
-    transform: translateX(0) translateY(0);
-  }
-
-  50% {
-    transform: translateX(2%) translateY(-4px);
-  }
-}
-
-@keyframes hero-wave-drift-3 {
-  0%,
-  100% {
-    transform: translateX(0) translateY(0);
-    opacity: 0.32;
-  }
-
-  50% {
-    transform: translateX(-1.5%) translateY(2px);
-    opacity: 0.48;
-  }
-}
-
-@keyframes hero-wave-drift-4 {
-  0%,
-  100% {
-    transform: translateX(0) translateY(0);
-    opacity: 0.22;
-  }
-
-  50% {
-    transform: translateX(3%) translateY(-2px);
-    opacity: 0.34;
-  }
-}
-
-.hero-wave-group-1 {
-  animation: hero-wave-drift-1 9s ease-in-out infinite;
-}
-
-.hero-wave-group-2 {
-  animation: hero-wave-drift-2 11s ease-in-out infinite;
-}
-
-.hero-wave-group-3 {
-  animation: hero-wave-drift-3 13s ease-in-out infinite;
-}
-
-.hero-wave-group-4 {
-  animation: hero-wave-drift-4 15s ease-in-out infinite;
 }

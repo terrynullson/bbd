@@ -138,9 +138,9 @@ export function QuickAddSheet({
     }
 
     const timeout = setTimeout(() => {
-      void fetchProductSuggestions({ type: 'product', query: name }).then(
-        setRemoteSuggestions,
-      );
+      void fetchProductSuggestions({ type: 'product', query: name })
+        .then(setRemoteSuggestions)
+        .catch(() => setRemoteSuggestions([]));
     }, 280);
 
     return () => clearTimeout(timeout);
@@ -365,7 +365,6 @@ export function QuickAddSheet({
               </p>
               <div className="relative">
                 <Input
-                  autoFocus
                   aria-label="Название продукта"
                   aria-autocomplete="list"
                   aria-expanded={isFocused && suggestions.length > 0}
