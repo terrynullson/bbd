@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  canonicalizeBrand,
+  canonicalizeProductName,
+} from '@/features/cosmetics/lib/canonicalize-product-name';
 import { normalizeSearchText, isUsefulCatalogValue } from '@/features/cosmetics/lib/normalize';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import type { BarcodeSource, BarcodeTrust, ProductCategory } from '@/features/cosmetics/types';
@@ -66,8 +70,8 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json()) as CatalogPayload;
-  const brand = body.brand?.trim() ?? '';
-  const name = body.name?.trim() ?? '';
+  const brand = canonicalizeBrand(body.brand?.trim() ?? '');
+  const name = canonicalizeProductName(body.name?.trim() ?? '');
 
   if (!isUsefulCatalogValue(brand) || !isUsefulCatalogValue(name)) {
     return NextResponse.json({ ok: true, skipped: 'weak-product' });

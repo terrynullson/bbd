@@ -15,14 +15,12 @@ import {
   useSuggestionKeyboard,
 } from './SuggestionDropdown';
 import { upsertCatalogProduct } from '../api/catalog-product';
-import { analyzeProduct } from '../api/analyze-product';
 import { lookupProductByBarcode } from '../api/lookup-product';
 import { fetchProductSuggestions } from '../api/suggest-products';
 import { useAddProductForm } from '../hooks/useAddProductForm';
 import { useAuth } from '@/lib/supabase/use-auth';
 import type {
   AddProductInput,
-  AnalyzeProductResponse,
   CosmeticItem,
   ProductSuggestion,
 } from '../types';
@@ -79,9 +77,6 @@ export function AddProductModal({
   const [productHighlight, setProductHighlight] = useState(-1);
   const [brandFocused, setBrandFocused] = useState(false);
   const [productFocused, setProductFocused] = useState(false);
-  const [barcodeAiSuggestion, setBarcodeAiSuggestion] =
-    useState<AnalyzeProductResponse | null>(null);
-  const [isBarcodeAiLoading, setIsBarcodeAiLoading] = useState(false);
   const form = useAddProductForm(item ?? initialValues);
   const isEditing = Boolean(item);
 
@@ -176,8 +171,8 @@ export function AddProductModal({
   const applyProductSuggestion = (suggestion: ProductSuggestion) => {
     if (suggestion.brand) form.setBrand(suggestion.brand);
     form.setName(suggestion.name);
-    if (suggestion.barcode) form.setBarcode(suggestion.barcode);
-    if (suggestion.paoMonths) form.setPaoMonths(suggestion.paoMonths);
+    if (suggestion.barcode) form.setBarcode(suggestion.barcode, 'manual');
+    if (suggestion.paoMonths) form.setPaoMonths(suggestion.paoMonths, 'catalog');
     if (suggestion.category) form.setCategory(suggestion.category);
     if (suggestion.imageUrl) form.setImageUrl(suggestion.imageUrl);
     form.setLookupSource(suggestion.source === 'catalog' ? 'catalog' : 'manual');
@@ -216,29 +211,10 @@ export function AddProductModal({
   }) => {
     if (result.brand) form.setBrand(result.brand);
     if (result.name) form.setName(result.name);
-    if (result.paoMonths) form.setPaoMonths(result.paoMonths);
+    if (result.paoMonths) form.setPaoMonths(result.paoMonths, 'catalog');
     if (result.category) form.setCategory(result.category);
     if (result.imageUrl) form.setImageUrl(result.imageUrl);
     form.setLookupSource(result.source ?? 'barcode');
-  };
-
-  const requestBarcodeAiSuggestion = async (code: string) => {
-    setIsBarcodeAiLoading(true);
-    setBarcodeAiSuggestion(null);
-    setLookupError('');
-
-    try {
-      const suggestion = await analyzeProduct({ barcode: code });
-      setBarcodeAiSuggestion(suggestion);
-    } catch (error) {
-      setLookupError(
-        error instanceof Error
-          ? error.message
-          : 'Не удалось угадать продукт по штрих-коду',
-      );
-    } finally {
-      setIsBarcodeAiLoading(false);
-    }
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -253,21 +229,23 @@ export function AddProductModal({
   };
 
   const handleBarcodeScan = async (code: string) => {
-    form.setBarcode(code);
+    form.setBarcode(code, 'scan');
     setIsScannerOpen(false);
     setLookupError('');
-    setBarcodeAiSuggestion(null);
     setIsLookupLoading(true);
 
     try {
       const result = await lookupProductByBarcode(code);
 
-      if (result.found) {
+      if (result.found && result.name) {
+        form.setBarcode(code, 'scan', result);
         applyLookupResult(result);
         return;
       }
 
-      await requestBarcodeAiSuggestion(code);
+      setLookupError(
+        'Штрих-код не найден. Заполните название или нажмите „Подобрать“.',
+      );
     } catch (error) {
       setLookupError(
         error instanceof Error
@@ -277,20 +255,6 @@ export function AddProductModal({
     } finally {
       setIsLookupLoading(false);
     }
-  };
-
-  const applyBarcodeAiSuggestion = () => {
-    if (!barcodeAiSuggestion) return;
-
-    form.setBrand(barcodeAiSuggestion.brand);
-    form.setName(barcodeAiSuggestion.name);
-    form.setPaoMonths(barcodeAiSuggestion.paoMonths);
-    if (barcodeAiSuggestion.category) {
-      form.setCategory(barcodeAiSuggestion.category);
-    }
-    form.setLookupSource('ai-barcode');
-    setBarcodeAiSuggestion(null);
-    setLookupError('');
   };
 
   return (
@@ -334,6 +298,11 @@ export function AddProductModal({
             {form.smartError && (
               <p className="mt-2 text-xs text-expired">{form.smartError}</p>
             )}
+            {form.smartFillOfflineMessage && (
+              <p className="mt-2 text-xs text-muted">
+                {form.smartFillOfflineMessage}
+              </p>
+            )}
           </div>
 
           <div className="relative">
@@ -371,8 +340,7 @@ export function AddProductModal({
                 placeholder="Штрих-код"
                 value={form.barcode}
                 onChange={(e) => {
-                  form.setBarcode(e.target.value);
-                  setBarcodeAiSuggestion(null);
+                  form.setBarcode(e.target.value, 'manual');
                   setLookupError('');
                 }}
                 className="min-w-0 flex-1"
@@ -382,14 +350,14 @@ export function AddProductModal({
                 variant="secondary"
                 onClick={() => setIsScannerOpen(true)}
                 aria-label="Сканировать штрих-код"
-                disabled={isLookupLoading || isBarcodeAiLoading}
+                disabled={isLookupLoading}
                 className="h-12 w-12 shrink-0 rounded-[14px] p-0 shadow-none"
               >
                 <Camera className="h-5 w-5" />
               </Button>
             </div>
           </div>
-          {(isLookupLoading || isBarcodeAiLoading || lookupError) && (
+          {(isLookupLoading || lookupError) && (
             <p
               className={`-mt-2 text-xs ${
                 lookupError ? 'text-muted' : 'text-accent'
@@ -397,41 +365,8 @@ export function AddProductModal({
             >
               {isLookupLoading
                 ? 'Ищем продукт по штрих-коду...'
-                : isBarcodeAiLoading
-                  ? 'Пробуем угадать продукт через ИИ...'
-                  : lookupError}
+                : lookupError}
             </p>
-          )}
-
-          {barcodeAiSuggestion && (
-            <div className="rounded-[14px] border border-accent/25 bg-accent/5 p-4">
-              <p className="text-sm text-muted">Возможно, это:</p>
-              <p className="mt-1 text-base font-semibold text-text">
-                {barcodeAiSuggestion.brand} · {barcodeAiSuggestion.name}
-              </p>
-              <p className="mt-1 text-xs text-muted">
-                Срок после вскрытия: {barcodeAiSuggestion.paoMonths} мес.
-              </p>
-              <div className="mt-3 flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  className="rounded-full"
-                  onClick={applyBarcodeAiSuggestion}
-                >
-                  Да, заполнить
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="rounded-full shadow-none"
-                  onClick={() => setBarcodeAiSuggestion(null)}
-                >
-                  Нет, вручную
-                </Button>
-              </div>
-            </div>
           )}
 
           <div>
@@ -481,6 +416,16 @@ export function AddProductModal({
           <div>
             <FieldLabel>Срок после вскрытия</FieldLabel>
             <PaoSelector value={form.paoMonths} onChange={form.setPaoMonths} />
+            {form.paoSource === 'preset' && (
+              <p className="mt-1.5 text-xs text-muted">
+                Типичный срок для категории. Уточните по упаковке.
+              </p>
+            )}
+            {form.paoSource === 'ai_estimate' && (
+              <p className="mt-1.5 text-xs text-muted">
+                Примерный срок. Ориентируйтесь на упаковку.
+              </p>
+            )}
           </div>
 
           <Button type="submit" size="lg" className="mt-1 h-12 w-full rounded-[14px]">

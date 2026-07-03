@@ -17,6 +17,23 @@ const SUBTYPE_LABELS: Record<ProductSubtype, string> = {
   other: 'Другое',
 };
 
+const DEFAULT_PAO_MONTHS: Record<ProductSubtype, number> = {
+  day_cream: 12,
+  night_cream: 12,
+  serum: 6,
+  toner: 12,
+  cleanser: 12,
+  mask: 6,
+  lipstick: 12,
+  foundation: 12,
+  shampoo: 12,
+  conditioner: 12,
+  body_lotion: 12,
+  perfume: 24,
+  nail_polish: 24,
+  other: 12,
+};
+
 export function inferTaxonomy(
   category: ProductCategory = 'other',
   text = '',
@@ -80,4 +97,8 @@ export function getSubtypeLabel(item: CosmeticItem): string {
     return SUBTYPE_LABELS[item.productSubtype];
   }
   return inferTaxonomy(item.category, `${item.brand} ${item.name}`).label;
+}
+
+export function getDefaultPaoMonths(subtype: ProductSubtype): number {
+  return DEFAULT_PAO_MONTHS[subtype];
 }

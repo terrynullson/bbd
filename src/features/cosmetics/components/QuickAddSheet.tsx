@@ -18,6 +18,7 @@ import { lookupProductByBarcode } from '../api/lookup-product';
 import { fetchProductSuggestions } from '../api/suggest-products';
 import { assessBarcodeTrust } from '../lib/barcode';
 import { inferCategoryFromText } from '../lib/categories';
+import { getDefaultPaoMonths, inferTaxonomy } from '../lib/taxonomy';
 import { haptic } from '@/lib/haptics';
 import type {
   AddProductInput,
@@ -71,6 +72,13 @@ function suggestionToInput(
   lookup?: LookupProductResponse,
 ): AddProductInput {
   const trimmedBarcode = barcode || suggestion.barcode;
+  const brand = suggestion.brand ?? 'Неизвестный бренд';
+  const category =
+    suggestion.category ?? inferCategoryFromText(`${brand} ${suggestion.name}`);
+  const presetPaoMonths = getPresetPaoMonths(
+    category,
+    `${brand} ${suggestion.name}`,
+  );
   const barcodeTrust = trimmedBarcode
     ? assessBarcodeTrust({
         barcode: trimmedBarcode,
@@ -82,14 +90,14 @@ function suggestionToInput(
 
   return {
     name: suggestion.name,
-    brand: suggestion.brand ?? 'Неизвестный бренд',
+    brand,
     barcode: trimmedBarcode,
     barcodeSource,
     barcodeTrust,
-    paoMonths: suggestion.paoMonths ?? 12,
+    paoMonths: suggestion.paoMonths ?? presetPaoMonths,
     openedAt: new Date(todayIso()).toISOString(),
     isSealed,
-    category: suggestion.category,
+    category,
     imageUrl: suggestion.imageUrl,
     lookupSource:
       suggestion.source === 'catalog'
@@ -97,7 +105,7 @@ function suggestionToInput(
         : lookup?.source === 'open-beauty-facts'
           ? 'open-beauty-facts'
           : 'manual',
-    paoSource: suggestion.paoMonths ? 'catalog' : undefined,
+    paoSource: suggestion.paoMonths ? 'catalog' : 'preset',
   };
 }
 
@@ -115,6 +123,10 @@ function lookupToSuggestion(
     imageUrl: lookup.imageUrl,
     source: 'catalog',
   };
+}
+
+function getPresetPaoMonths(category: AddProductInput['category'], text: string) {
+  return getDefaultPaoMonths(inferTaxonomy(category, text).subtype);
 }
 
 export function QuickAddSheet({
@@ -329,13 +341,14 @@ export function QuickAddSheet({
         }
 
         if (!trimmedBarcode) {
+          const category = inferCategoryFromText(trimmedName);
           submitProduct({
             name: trimmedName,
             brand: 'Неизвестный бренд',
-            paoMonths: 12,
+            paoMonths: getPresetPaoMonths(category, trimmedName),
             openedAt: new Date(todayIso()).toISOString(),
             isSealed,
-            category: inferCategoryFromText(trimmedName),
+            category,
             lookupSource: 'manual',
             paoSource: 'preset',
           });

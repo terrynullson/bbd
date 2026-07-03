@@ -1,6 +1,10 @@
 import type { AddProductInput } from '../types';
 import { assessBarcodeTrust } from '../lib/barcode';
 import { buildCatalogPayload } from '../lib/catalog-guard';
+import {
+  canonicalizeBrand,
+  canonicalizeProductName,
+} from '../lib/canonicalize-product-name';
 import { lookupProductByBarcode } from './lookup-product';
 
 export async function upsertCatalogProduct(input: AddProductInput) {
@@ -30,7 +34,11 @@ export async function upsertCatalogProduct(input: AddProductInput) {
     await fetch('/api/products/catalog', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        brand: canonicalizeBrand(payload.brand),
+        name: canonicalizeProductName(payload.name),
+      }),
     });
   } catch {
     // Catalog enrichment is best-effort; product save must never fail because of it.
