@@ -23,8 +23,9 @@ const STATUS_LABELS = {
 } as const;
 
 export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
-  const daysRemaining = getDaysRemaining(item.openedAt, item.paoMonths);
-  const progress = getPaoProgress(item.openedAt, item.paoMonths);
+  const isSealed = item.isSealed ?? false;
+  const daysRemaining = getDaysRemaining(item.openedAt, item.paoMonths, isSealed);
+  const progress = getPaoProgress(item.openedAt, item.paoMonths, isSealed);
 
   return (
     <article className="rounded-[18px] border border-border/80 bg-bg p-4">
@@ -55,7 +56,7 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
               <Badge variant={item.status} solid>
-                {STATUS_LABELS[item.status]}
+                {isSealed ? 'Закрыто' : STATUS_LABELS[item.status]}
               </Badge>
               <button
                 type="button"
@@ -73,9 +74,11 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
       <div className="mt-4 space-y-2.5 border-t border-border/60 pt-3">
         <div className="flex items-center justify-between gap-3 text-[12px] text-muted">
           <span className="shrink-0">
-            {item.status === 'expired'
-              ? 'Срок истёк'
-              : `${daysRemaining} дн. осталось`}
+            {isSealed
+              ? 'Не вскрыт'
+              : item.status === 'expired'
+                ? 'Срок истёк'
+                : `${daysRemaining} дн. осталось`}
           </span>
           <div className="flex min-w-0 items-center gap-2">
             <span className="truncate">{item.paoMonths}M PAO</span>

@@ -1,11 +1,6 @@
 import { ProductIllustration } from './ProductIllustration';
-import { Button } from '@/components/ui/Button';
 
-type EmptyStateProps = {
-  onAdd: () => void;
-};
-
-export function EmptyState({ onAdd }: EmptyStateProps) {
+export function EmptyState() {
   return (
     <div className="rounded-[20px] border border-border/70 bg-bg px-6 py-8 text-center">
       <div className="mx-auto mb-5 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-accent text-white shadow-[var(--shadow-button)]">
@@ -19,9 +14,9 @@ export function EmptyState({ onAdd }: EmptyStateProps) {
         Добавьте первый продукт — мы посчитаем срок после вскрытия.
       </p>
 
-      <Button size="lg" className="mt-6 h-12 w-full rounded-[14px]" onClick={onAdd}>
-        Добавить продукт
-      </Button>
+      <p className="mt-6 text-sm text-muted">
+        Нажмите <span className="font-medium text-accent">+</span> внизу экрана
+      </p>
     </div>
   );
 }

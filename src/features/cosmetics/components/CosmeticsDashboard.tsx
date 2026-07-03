@@ -17,13 +17,18 @@ export function CosmeticsDashboard({
 
   return (
     <div className="flex flex-col gap-3">
-      {sorted.map((item) => (
-        <CosmeticCard
+      {sorted.map((item, index) => (
+        <div
           key={item.id}
-          item={item}
-          onRemove={onRemove}
-          onEdit={onEdit}
-        />
+          className="card-enter"
+          style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
+        >
+          <CosmeticCard
+            item={item}
+            onRemove={onRemove}
+            onEdit={onEdit}
+          />
+        </div>
       ))}
     </div>
   );

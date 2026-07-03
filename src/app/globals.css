@@ -166,3 +166,79 @@ input[type='date'] {
   animation: sheet-slide-up 0.38s cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
 }
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fab-breathe {
+  0%,
+  100% {
+    box-shadow: var(--shadow-button);
+  }
+
+  50% {
+    box-shadow:
+      0 10px 28px rgba(193, 125, 101, 0.36),
+      0 0 0 6px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+}
+
+.content-enter {
+  animation: fade-in-up 0.42s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.card-enter {
+  animation: fade-in-up 0.38s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.toast-enter {
+  animation: toast-in 0.32s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.fab-button {
+  animation: fab-breathe 4s ease-in-out infinite;
+}
+
+.nav-icon {
+  transition:
+    color 0.2s ease,
+    transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.nav-icon:active {
+  transform: scale(0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-backdrop,
+  .sheet-panel,
+  .content-enter,
+  .card-enter,
+  .toast-enter,
+  .fab-button,
+  .nav-bar {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}

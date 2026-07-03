@@ -15,6 +15,7 @@ export interface CosmeticItem {
   barcode?: string;
   paoMonths: number;
   openedAt: string;
+  isSealed?: boolean;
   status: CosmeticStatus;
   category?: ProductCategory;
   imageUrl?: string;
@@ -37,6 +38,7 @@ export interface AddProductInput {
   barcode?: string;
   paoMonths: number;
   openedAt: string;
+  isSealed?: boolean;
   category?: ProductCategory;
   imageUrl?: string;
   notes?: string;

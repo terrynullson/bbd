@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { uploadProductPhoto } from '../api/upload-product-photo';
 import { compressImageToDataUrl } from '../lib/compress-image';
+import { deleteProductPhoto } from '../lib/product-photo-storage';
 
 type ProductPhotoPickerProps = {
   value?: string;
@@ -32,6 +33,9 @@ export function ProductPhotoPicker({
     try {
       if (userId) {
         const url = await uploadProductPhoto(file, userId);
+        if (value && value !== url) {
+          void deleteProductPhoto(value);
+        }
         onChange(url);
         return;
       }
@@ -83,7 +87,10 @@ export function ProductPhotoPicker({
               size="icon"
               className="h-9 w-9 bg-black/20 text-white hover:bg-black/35 hover:text-white"
               aria-label="Удалить фото"
-              onClick={() => onChange('')}
+              onClick={() => {
+                if (value) void deleteProductPhoto(value);
+                onChange('');
+              }}
             >
               <X className="h-4 w-4" />
             </Button>

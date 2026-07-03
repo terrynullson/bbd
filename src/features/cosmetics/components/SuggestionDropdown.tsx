@@ -45,6 +45,7 @@ export function SuggestionDropdown({
     <ul
       ref={listRef}
       role="listbox"
+      data-sheet-no-drag
       className="absolute inset-x-0 top-full z-20 mt-1 max-h-52 overflow-y-auto rounded-[14px] border border-border/60 bg-surface/90 shadow-[var(--shadow-card)] backdrop-blur-md"
     >
       {suggestions.map((suggestion, index) => {

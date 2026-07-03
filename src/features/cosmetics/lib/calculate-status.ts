@@ -4,7 +4,10 @@ import type { CosmeticStatus } from '../types';
 export function calculateStatus(
   openedAt: string | Date,
   paoMonths: number,
+  isSealed = false,
 ): CosmeticStatus {
+  if (isSealed) return 'fresh';
+
   const openDate = new Date(openedAt);
   const expirationDate = new Date(openDate);
   expirationDate.setMonth(expirationDate.getMonth() + paoMonths);
@@ -21,7 +24,10 @@ export function calculateStatus(
 export function getDaysRemaining(
   openedAt: string | Date,
   paoMonths: number,
+  isSealed = false,
 ): number {
+  if (isSealed) return paoMonths * 30;
+
   const openDate = new Date(openedAt);
   const expirationDate = new Date(openDate);
   expirationDate.setMonth(expirationDate.getMonth() + paoMonths);
@@ -34,7 +40,10 @@ export function getDaysRemaining(
 export function getPaoProgress(
   openedAt: string | Date,
   paoMonths: number,
+  isSealed = false,
 ): number {
+  if (isSealed) return 0;
+
   const openDate = new Date(openedAt);
   const expirationDate = new Date(openDate);
   expirationDate.setMonth(expirationDate.getMonth() + paoMonths);

@@ -11,6 +11,7 @@ type ProductRow = {
   category: CosmeticItem['category'];
   opened_at: string;
   pao_months: number;
+  is_sealed: boolean;
   barcode: string | null;
   image_url: string | null;
   notes: string | null;
@@ -30,6 +31,7 @@ function toRow(item: CosmeticItem, userId: string): ProductRow {
     category: item.category ?? 'other',
     opened_at: item.openedAt,
     pao_months: item.paoMonths,
+    is_sealed: item.isSealed ?? false,
     barcode: item.barcode ?? null,
     image_url:
       item.imageUrl && !item.imageUrl.startsWith('data:')
@@ -52,6 +54,7 @@ function fromRow(row: ProductRow): CosmeticItem {
     category: row.category ?? 'other',
     openedAt: row.opened_at,
     paoMonths: row.pao_months,
+    isSealed: row.is_sealed ?? false,
     barcode: row.barcode ?? undefined,
     imageUrl: row.image_url ?? undefined,
     notes: row.notes ?? undefined,
@@ -59,7 +62,7 @@ function fromRow(row: ProductRow): CosmeticItem {
     createdAt: row.created_at,
     updatedAt: row.client_updated_at ?? row.updated_at,
     deletedAt: row.deleted_at ?? undefined,
-    status: calculateStatus(row.opened_at, row.pao_months),
+    status: calculateStatus(row.opened_at, row.pao_months, row.is_sealed ?? false),
   };
 }
 

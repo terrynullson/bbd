@@ -8,6 +8,7 @@ import {
   upsertCloudProducts,
 } from '../api/sync-products';
 import { calculateStatus } from '../lib/calculate-status';
+import { deleteProductPhoto } from '../lib/product-photo-storage';
 import { readCosmetics, writeCosmetics } from '../lib/storage';
 import type { AddProductInput, CosmeticItem, UpdateProductInput } from '../types';
 
@@ -241,7 +242,7 @@ export function useCosmetics() {
     const item: CosmeticItem = {
       ...input,
       id: crypto.randomUUID(),
-      status: calculateStatus(input.openedAt, input.paoMonths),
+      status: calculateStatus(input.openedAt, input.paoMonths, input.isSealed),
       createdAt: now,
       updatedAt: now,
       lookupSource: input.lookupSource ?? (input.barcode ? 'barcode' : 'manual'),
@@ -251,17 +252,40 @@ export function useCosmetics() {
 
   const updateItem = useCallback((id: string, input: UpdateProductInput) => {
     setCanWriteStorage(true);
-    setItems((prev) =>
-      prev.map((item) =>
+    setItems((prev) => {
+      const existing = prev.find((item) => item.id === id);
+      const nextImageUrl = input.imageUrl?.trim() || undefined;
+      const previousImageUrl = existing?.imageUrl;
+
+      if (
+        previousImageUrl &&
+        previousImageUrl !== nextImageUrl
+      ) {
+        void deleteProductPhoto(previousImageUrl);
+      }
+
+      return prev.map((item) =>
         item.id === id
           ? {
               ...item,
               ...input,
-              status: calculateStatus(input.openedAt, input.paoMonths),
+              imageUrl: nextImageUrl,
+              status: calculateStatus(input.openedAt, input.paoMonths, input.isSealed),
               updatedAt: new Date().toISOString(),
               deletedAt: undefined,
             }
           : item,
+      );
+    });
+  }, []);
+
+  const finalizeDeletion = useCallback((item: CosmeticItem) => {
+    void deleteProductPhoto(item.imageUrl);
+    setItems((prev) =>
+      prev.map((current) =>
+        current.id === item.id
+          ? { ...current, imageUrl: undefined }
+          : current,
       ),
     );
   }, []);
@@ -307,6 +331,7 @@ export function useCosmetics() {
     updateItem,
     removeItem,
     restoreItem,
+    finalizeDeletion,
     isLoaded,
     isSaving,
     error,

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { BarcodeScanner } from './BarcodeScanner';
 import { PaoSelector } from './PaoSelector';
+import { PackagingToggle } from './PackagingToggle';
 import { ProductPhotoPicker } from './ProductPhotoPicker';
 import { SmartFillButton } from './SmartFillButton';
 import {
@@ -30,6 +31,7 @@ type AddProductModalProps = {
   onClose: () => void;
   onSubmit: (input: AddProductInput) => void;
   item?: CosmeticItem | null;
+  initialValues?: Partial<AddProductInput>;
   localItems?: CosmeticItem[];
 };
 
@@ -60,6 +62,7 @@ function mergeSuggestions(
 
 export function AddProductModal({
   item,
+  initialValues,
   localItems = [],
   onClose,
   onSubmit,
@@ -77,7 +80,7 @@ export function AddProductModal({
   const [barcodeAiSuggestion, setBarcodeAiSuggestion] =
     useState<AnalyzeProductResponse | null>(null);
   const [isBarcodeAiLoading, setIsBarcodeAiLoading] = useState(false);
-  const form = useAddProductForm(item ?? undefined);
+  const form = useAddProductForm(item ?? initialValues);
   const isEditing = Boolean(item);
 
   const localBrandSuggestions = useMemo(() => {
@@ -437,9 +440,20 @@ export function AddProductModal({
               type="date"
               value={form.openedAt}
               max={new Date().toISOString().slice(0, 10)}
+              disabled={form.isSealed}
               onChange={(e) => form.setOpenedAt(e.target.value)}
             />
           </div>
+
+          <PackagingToggle
+            isOpen={!form.isSealed}
+            onChange={(isOpen) => {
+              form.setIsSealed(!isOpen);
+              if (isOpen) {
+                form.setOpenedAt(new Date().toISOString().slice(0, 10));
+              }
+            }}
+          />
 
           <div>
             <FieldLabel>Срок после вскрытия</FieldLabel>

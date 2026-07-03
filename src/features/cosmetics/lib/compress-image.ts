@@ -1,12 +1,31 @@
-const MAX_DIMENSION = 512;
-const JPEG_QUALITY = 0.68;
-const MAX_BYTES = 120_000;
+const MAX_DIMENSION = 800;
+const DEFAULT_QUALITY = 0.8;
+const MAX_BYTES = 150_000;
+const MIN_QUALITY = 0.45;
+
+type ImageMime = 'image/webp' | 'image/jpeg';
 
 type CompressImageOptions = {
   maxDimension?: number;
   quality?: number;
   maxBytes?: number;
 };
+
+let webpSupported: boolean | undefined;
+
+function isWebpSupported(): boolean {
+  if (webpSupported !== undefined) return webpSupported;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  webpSupported = canvas.toDataURL('image/webp').startsWith('data:image/webp');
+  return webpSupported;
+}
+
+function pickOutputMime(): ImageMime {
+  return isWebpSupported() ? 'image/webp' : 'image/jpeg';
+}
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -50,6 +69,7 @@ function drawToCanvas(
 
 function canvasToBlob(
   canvas: HTMLCanvasElement,
+  mime: ImageMime,
   quality: number,
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -61,43 +81,51 @@ function canvasToBlob(
         }
         resolve(blob);
       },
-      'image/jpeg',
+      mime,
       quality,
     );
   });
 }
 
+export type CompressedImage = {
+  blob: Blob;
+  mime: ImageMime;
+  extension: 'webp' | 'jpg';
+};
+
 export async function compressImageFile(
   file: File,
   options: CompressImageOptions = {},
-): Promise<Blob> {
+): Promise<CompressedImage> {
   if (!file.type.startsWith('image/')) {
     throw new Error('Выберите файл изображения');
   }
 
   const maxDimension = options.maxDimension ?? MAX_DIMENSION;
   const maxBytes = options.maxBytes ?? MAX_BYTES;
-  let quality = options.quality ?? JPEG_QUALITY;
+  let quality = options.quality ?? DEFAULT_QUALITY;
+  const mime = pickOutputMime();
+  const extension = mime === 'image/webp' ? 'webp' : 'jpg';
 
   const image = await loadImage(file);
   const canvas = drawToCanvas(image, maxDimension);
 
-  let blob = await canvasToBlob(canvas, quality);
+  let blob = await canvasToBlob(canvas, mime, quality);
 
-  while (blob.size > maxBytes && quality > 0.4) {
-    quality -= 0.08;
-    blob = await canvasToBlob(canvas, quality);
+  while (blob.size > maxBytes && quality > MIN_QUALITY) {
+    quality -= 0.07;
+    blob = await canvasToBlob(canvas, mime, quality);
   }
 
   if (blob.size > maxBytes) {
     throw new Error('Фото слишком большое даже после сжатия');
   }
 
-  return blob;
+  return { blob, mime, extension };
 }
 
 export async function compressImageToDataUrl(file: File): Promise<string> {
-  const blob = await compressImageFile(file);
+  const { blob } = await compressImageFile(file);
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {

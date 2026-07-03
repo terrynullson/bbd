@@ -22,6 +22,8 @@ function isLegacyItemsArray(value: unknown): value is StoredCosmeticItem[] {
 function normalizeItem(item: StoredCosmeticItem): CosmeticItem {
   const now = new Date().toISOString();
   const createdAt = item.createdAt ?? now;
+  const isSealed =
+    item.isSealed ?? item.notes === 'Упаковка закрыта';
 
   return {
     id: item.id,
@@ -30,7 +32,8 @@ function normalizeItem(item: StoredCosmeticItem): CosmeticItem {
     barcode: item.barcode,
     paoMonths: item.paoMonths,
     openedAt: item.openedAt,
-    status: calculateStatus(item.openedAt, item.paoMonths),
+    isSealed,
+    status: calculateStatus(item.openedAt, item.paoMonths, isSealed),
     category: item.category ?? 'other',
     imageUrl: item.imageUrl,
     createdAt,

@@ -1,18 +1,21 @@
 'use client';
 
-import { Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { PageHero } from '@/components/layout/PageHero';
-import { AuthButton } from '@/components/auth/AuthButton';
-import { Button } from '@/components/ui/Button';
+import { BottomNavBar } from '@/components/layout/BottomNavBar';
 import { AddProductModal } from './AddProductModal';
+import { QuickAddSheet } from './QuickAddSheet';
+import { ProfileSheet } from './ProfileSheet';
 import { CosmeticsDashboard } from './CosmeticsDashboard';
 import { EmptyState } from './EmptyState';
 import { InstallPrompt } from './InstallPrompt';
 import { summarizeStatuses } from '../lib/sort-items';
 import { useCosmetics } from '../hooks/useCosmetics';
 import { APP_VERSION } from '@/lib/constants';
-import type { CosmeticItem } from '../types';
+import { haptic } from '@/lib/haptics';
+import type { AddProductInput, CosmeticItem } from '../types';
+
+type NavTab = 'shelf' | 'account';
 
 export function CosmeticsPage() {
   const {
@@ -21,6 +24,7 @@ export function CosmeticsPage() {
     updateItem,
     removeItem,
     restoreItem,
+    finalizeDeletion,
     isLoaded,
     isSaving,
     error,
@@ -31,18 +35,33 @@ export function CosmeticsPage() {
     retrySync,
     user,
   } = useCosmetics();
+  const [activeTab, setActiveTab] = useState<NavTab>('shelf');
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CosmeticItem | null>(null);
+  const [manualInitial, setManualInitial] = useState<Partial<AddProductInput>>();
   const [deletedItem, setDeletedItem] = useState<CosmeticItem | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
-  const openAddModal = () => {
+  const isSheetOpen = isQuickAddOpen || isProfileOpen || isModalOpen;
+  const isSignedIn = Boolean(user);
+
+  const openQuickAdd = () => {
+    setActiveTab('shelf');
+    setIsQuickAddOpen(true);
+  };
+
+  const openManualAdd = (draft?: Partial<AddProductInput>) => {
     setEditingItem(null);
+    setManualInitial(draft);
     setIsModalOpen(true);
   };
 
   const openEditModal = (item: CosmeticItem) => {
     setEditingItem(item);
+    setManualInitial(undefined);
     setIsModalOpen(true);
   };
 
@@ -56,9 +75,15 @@ export function CosmeticsPage() {
     const removed = removeItem(id);
     if (!removed) return;
 
+    if (deletedItem) {
+      finalizeDeletion(deletedItem);
+    }
+
     clearUndoTimer();
     setDeletedItem(removed);
+    haptic('medium');
     undoTimerRef.current = setTimeout(() => {
+      finalizeDeletion(removed);
       setDeletedItem(null);
       undoTimerRef.current = null;
     }, 5000);
@@ -66,10 +91,10 @@ export function CosmeticsPage() {
 
   const handleUndoDelete = () => {
     if (!deletedItem) return;
-
     restoreItem(deletedItem);
     setDeletedItem(null);
     clearUndoTimer();
+    haptic('light');
   };
 
   useEffect(() => clearUndoTimer, []);
@@ -88,12 +113,11 @@ export function CosmeticsPage() {
       ? `${summary.fresh} свежих · ${summary.expiring} истекают · ${summary.expired} просрочено`
       : null;
 
-  const bottomPad = items.length > 0 ? 'pb-[calc(5.5rem+var(--safe-bottom))]' : 'pb-6';
-  const toastPosition =
-    items.length > 0
-      ? 'bottom-[calc(6.25rem+var(--safe-bottom))]'
-      : 'bottom-[calc(1rem+var(--safe-bottom))]';
-  const isSignedIn = Boolean(user);
+  const bottomPad = 'pb-[calc(5.5rem+var(--safe-bottom))]';
+  const toastPosition = isSheetOpen
+    ? 'bottom-[calc(1rem+var(--safe-bottom))]'
+    : 'bottom-[calc(6.25rem+var(--safe-bottom))]';
+
   const storageStatus = !isOnline
     ? 'Офлайн · изменения сохраняются на устройстве'
     : error
@@ -111,19 +135,27 @@ export function CosmeticsPage() {
                 : 'Локальное хранение готово';
   const showSyncRetry = Boolean(syncError && isOnline && isSignedIn);
 
+  const handleShelfPress = () => {
+    setActiveTab('shelf');
+    setIsProfileOpen(false);
+    mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleAccountPress = () => {
+    setActiveTab('account');
+    setIsProfileOpen(true);
+  };
+
   return (
     <div className="mx-auto min-h-dvh w-full max-w-lg bg-bg">
       <PageHero summary={summaryLine} />
 
       <main
-        className={`relative z-10 -mt-5 rounded-t-[28px] bg-surface px-4 pt-6 shadow-[0_-8px_32px_rgba(44,36,32,0.06)] ${bottomPad}`}
+        ref={mainRef}
+        className={`content-enter relative z-10 -mt-5 rounded-t-[28px] bg-surface px-4 pt-6 shadow-[0_-8px_32px_rgba(44,36,32,0.06)] ${bottomPad}`}
       >
-        <div className="mb-4">
-          <AuthButton />
-        </div>
-
         {items.length === 0 ? (
-          <EmptyState onAdd={openAddModal} />
+          <EmptyState />
         ) : (
           <CosmeticsDashboard
             items={items}
@@ -157,28 +189,42 @@ export function CosmeticsPage() {
         </p>
       </main>
 
-      {items.length > 0 && (
-        <div className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t border-border/50 bg-surface/90 px-4 pt-3 backdrop-blur-xl">
-          <div className="mx-auto w-full max-w-lg">
-            <Button
-              size="lg"
-              className="h-12 w-full rounded-[14px] text-[15px]"
-              onClick={openAddModal}
-            >
-              <Plus className="h-5 w-5" />
-              Добавить продукт
-            </Button>
-          </div>
-        </div>
+      <BottomNavBar
+        activeTab={activeTab}
+        isSignedIn={isSignedIn}
+        isHidden={isSheetOpen}
+        onShelfPress={handleShelfPress}
+        onAddPress={openQuickAdd}
+        onAccountPress={handleAccountPress}
+      />
+
+      {isQuickAddOpen && (
+        <QuickAddSheet
+          localItems={items}
+          onClose={() => setIsQuickAddOpen(false)}
+          onSubmit={(input) => addItem(input)}
+          onManualFill={(draft) => openManualAdd(draft)}
+        />
+      )}
+
+      {isProfileOpen && (
+        <ProfileSheet
+          onClose={() => {
+            setIsProfileOpen(false);
+            setActiveTab('shelf');
+          }}
+        />
       )}
 
       {isModalOpen && (
         <AddProductModal
           item={editingItem}
+          initialValues={manualInitial}
           localItems={items}
           onClose={() => {
             setIsModalOpen(false);
             setEditingItem(null);
+            setManualInitial(undefined);
           }}
           onSubmit={(input) => {
             if (editingItem) {
@@ -186,14 +232,13 @@ export function CosmeticsPage() {
               setEditingItem(null);
               return;
             }
-
             addItem(input);
           }}
         />
       )}
 
       {deletedItem && (
-        <div className={`fixed inset-x-0 z-40 px-4 ${toastPosition}`}>
+        <div className={`toast-enter fixed inset-x-0 z-40 px-4 ${toastPosition}`}>
           <div className="mx-auto flex max-w-lg items-center justify-between gap-3 rounded-[16px] bg-[#2c2420] px-4 py-3 text-sm text-white shadow-[var(--shadow-modal)]">
             <span className="min-w-0 truncate">
               «{deletedItem.name}» удалён

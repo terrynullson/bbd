@@ -16,6 +16,7 @@ const DEFAULT_FORM = {
   imageUrl: '',
   notes: '',
   lookupSource: 'manual' as AddProductInput['lookupSource'],
+  isSealed: false,
 };
 
 function toDateInputValue(value?: string) {
@@ -33,6 +34,7 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
   const [imageUrl, setImageUrl] = useState(DEFAULT_FORM.imageUrl);
   const [notes, setNotes] = useState(DEFAULT_FORM.notes);
   const [lookupSource, setLookupSource] = useState(DEFAULT_FORM.lookupSource);
+  const [isSealed, setIsSealed] = useState(DEFAULT_FORM.isSealed);
   const [isSmartLoading, setIsSmartLoading] = useState(false);
   const [smartError, setSmartError] = useState('');
 
@@ -46,6 +48,7 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
     setImageUrl(values?.imageUrl ?? DEFAULT_FORM.imageUrl);
     setNotes(values?.notes ?? DEFAULT_FORM.notes);
     setLookupSource(values?.lookupSource ?? DEFAULT_FORM.lookupSource);
+    setIsSealed(values?.isSealed ?? DEFAULT_FORM.isSealed);
     setSmartError('');
   }, []);
 
@@ -67,12 +70,13 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
       barcode: barcode.trim() || undefined,
       paoMonths,
       openedAt: new Date(openedAt).toISOString(),
+      isSealed,
       category,
       imageUrl: imageUrl.trim() || undefined,
       notes: notes.trim() || undefined,
       lookupSource,
     };
-  }, [name, brand, barcode, paoMonths, openedAt, category, imageUrl, notes, lookupSource]);
+  }, [name, brand, barcode, paoMonths, openedAt, isSealed, category, imageUrl, notes, lookupSource]);
 
   const handleSmartFill = useCallback(async () => {
     const trimmedName = name.trim();
@@ -136,6 +140,8 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
     setNotes,
     lookupSource,
     setLookupSource,
+    isSealed,
+    setIsSealed,
     isSmartLoading,
     smartError,
     setSmartError,

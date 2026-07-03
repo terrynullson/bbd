@@ -23,9 +23,17 @@ export function PageHero({ summary }: PageHeroProps) {
           <ThemeToggle variant="hero" />
         </div>
 
-        <h1 className="font-display mt-4 text-[1.75rem] font-semibold leading-[1.15] tracking-tight text-white sm:text-[2rem]">
-          Где мой крем
-        </h1>
+        <div className="relative mt-4 py-1">
+          <img
+            src="/images/hero-title-waves.png"
+            alt=""
+            aria-hidden
+            className="pointer-events-none absolute inset-x-[-10%] top-1/2 w-[120%] max-w-none -translate-y-1/2 opacity-85 mix-blend-lighten"
+          />
+          <h1 className="relative font-display text-[1.75rem] font-semibold leading-[1.15] tracking-tight text-white sm:text-[2rem]">
+            Где мой крем
+          </h1>
+        </div>
 
         {summary && (
           <p className="mt-2 text-[13px] leading-relaxed text-white/85">{summary}</p>
