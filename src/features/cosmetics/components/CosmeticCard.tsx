@@ -4,10 +4,13 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import {
   getDaysRemaining,
+  getLimitingLabel,
   getPaoProgress,
+  resolveExpiry,
 } from '../lib/calculate-status';
+import { expiryParamsFromItem, formatExpiryDate } from '../lib/expiry';
 import { getSubtypeLabel } from '../lib/taxonomy';
-import { ProductIllustration } from './ProductIllustration';
+import { PackagingIcon } from './PackagingIcon';
 import type { CosmeticItem } from '../types';
 
 type CosmeticCardProps = {
@@ -17,15 +20,29 @@ type CosmeticCardProps = {
 };
 
 const STATUS_LABELS = {
-  fresh: 'Fresh',
-  expiring: 'Expiring',
-  expired: 'Expired',
+  fresh: 'Свежий',
+  expiring: 'Скоро',
+  expired: 'Просрочен',
 } as const;
 
 export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
+  const params = expiryParamsFromItem(item);
   const isSealed = item.isSealed ?? false;
-  const daysRemaining = getDaysRemaining(item.openedAt, item.paoMonths, isSealed);
-  const progress = getPaoProgress(item.openedAt, item.paoMonths, isSealed);
+  const daysRemaining = getDaysRemaining(params);
+  const progress = getPaoProgress(params);
+  const { limitingFactor } = resolveExpiry(params);
+  const limitingLabel = getLimitingLabel(limitingFactor, item.expiresAt);
+
+  const statusLine = (() => {
+    if (isSealed && !item.expiresAt) return 'Срок не указан';
+    if (isSealed && item.expiresAt) {
+      return daysRemaining <= 0
+        ? 'Срок истёк'
+        : `Годен до ${formatExpiryDate(item.expiresAt)} · ${daysRemaining} дн.`;
+    }
+    if (item.status === 'expired') return 'Срок истёк';
+    return `${daysRemaining} дн. осталось`;
+  })();
 
   return (
     <article className="rounded-[18px] border border-border/80 bg-bg p-4">
@@ -39,7 +56,7 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
               role="img"
             />
           ) : (
-            <ProductIllustration category={item.category} className="h-9 w-9" />
+            <PackagingIcon item={item} />
           )}
         </div>
 
@@ -61,7 +78,9 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
               <Badge variant={item.status} solid>
-                {isSealed ? 'Не открыт' : STATUS_LABELS[item.status]}
+                {isSealed && !item.expiresAt
+                  ? 'Не открыт'
+                  : STATUS_LABELS[item.status]}
               </Badge>
               <button
                 type="button"
@@ -78,15 +97,11 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
 
       <div className="mt-4 space-y-2.5 border-t border-border/60 pt-3">
         <div className="flex items-center justify-between gap-3 text-[12px] text-muted">
-          <span className="shrink-0">
-            {isSealed
-              ? 'Не открыт'
-              : item.status === 'expired'
-                ? 'Срок истёк'
-                : `${daysRemaining} дн. осталось`}
-          </span>
+          <span className="min-w-0 shrink">{statusLine}</span>
           <div className="flex min-w-0 items-center gap-2">
-            <span className="truncate">{item.paoMonths}M PAO</span>
+            {!isSealed && (
+              <span className="truncate">{item.paoMonths}M PAO</span>
+            )}
             <button
               type="button"
               onClick={() => onRemove(item.id)}
@@ -97,6 +112,10 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
             </button>
           </div>
         </div>
+
+        {limitingLabel && (
+          <p className="text-[11px] text-muted">{limitingLabel}</p>
+        )}
 
         <div className="h-1.5 overflow-hidden rounded-full bg-surface">
           <div

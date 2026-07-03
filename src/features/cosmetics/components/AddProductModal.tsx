@@ -465,6 +465,20 @@ export function AddProductModal({
           />
 
           <div>
+            <FieldLabel>Годен до</FieldLabel>
+            <Input
+              type="date"
+              value={form.expiresAt}
+              onChange={(e) => form.setExpiresAt(e.target.value)}
+            />
+            <p className="mt-1.5 text-xs text-muted">
+              {form.isSealed
+                ? 'Дата с упаковки (EXP). Основной срок для неоткрытого средства.'
+                : 'Если на упаковке есть срок годности — укажите его. Действует то, что наступит раньше: EXP или PAO.'}
+            </p>
+          </div>
+
+          <div>
             <FieldLabel>Срок после вскрытия</FieldLabel>
             <PaoSelector value={form.paoMonths} onChange={form.setPaoMonths} />
           </div>
@@ -482,6 +496,9 @@ export function AddProductModal({
                   brand: form.brand.trim() || undefined,
                   barcode: form.barcode.trim() || undefined,
                   isSealed: form.isSealed,
+                  expiresAt: form.expiresAt
+                    ? new Date(form.expiresAt).toISOString()
+                    : undefined,
                   openedAt: form.openedAt
                     ? new Date(form.openedAt).toISOString()
                     : undefined,

@@ -8,6 +8,7 @@ import { QuickAddSheet } from './QuickAddSheet';
 import { ProfileSheet } from './ProfileSheet';
 import { CosmeticsDashboard } from './CosmeticsDashboard';
 import { EmptyState } from './EmptyState';
+import { ShelfTip } from './ShelfTip';
 import { InstallPrompt } from './InstallPrompt';
 import { summarizeStatuses } from '../lib/sort-items';
 import { useCosmetics } from '../hooks/useCosmetics';
@@ -161,11 +162,14 @@ export function CosmeticsPage() {
         {items.length === 0 ? (
           <EmptyState />
         ) : (
-          <CosmeticsDashboard
-            items={items}
-            onRemove={handleRemove}
-            onEdit={openEditModal}
-          />
+          <>
+            <ShelfTip />
+            <CosmeticsDashboard
+              items={items}
+              onRemove={handleRemove}
+              onEdit={openEditModal}
+            />
+          </>
         )}
 
         <p

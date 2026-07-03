@@ -10,6 +10,8 @@ type ProductRow = {
   name: string;
   category: CosmeticItem['category'];
   opened_at: string;
+  expires_at: string | null;
+  expiry_source: string | null;
   pao_months: number;
   is_sealed: boolean;
   barcode: string | null;
@@ -32,6 +34,8 @@ function toRow(item: CosmeticItem, userId: string): ProductRow {
     name: item.name,
     category: item.category ?? 'other',
     opened_at: item.openedAt,
+    expires_at: item.expiresAt?.slice(0, 10) ?? null,
+    expiry_source: item.expirySource ?? null,
     pao_months: item.paoMonths,
     is_sealed: item.isSealed ?? false,
     barcode: item.barcode ?? null,
@@ -57,6 +61,8 @@ function fromRow(row: ProductRow): CosmeticItem {
     name: row.name,
     category: row.category ?? 'other',
     openedAt: row.opened_at,
+    expiresAt: row.expires_at ?? undefined,
+    expirySource: (row.expiry_source as CosmeticItem['expirySource']) ?? undefined,
     paoMonths: row.pao_months,
     isSealed: row.is_sealed ?? false,
     barcode: row.barcode ?? undefined,
@@ -68,7 +74,12 @@ function fromRow(row: ProductRow): CosmeticItem {
     createdAt: row.created_at,
     updatedAt: row.client_updated_at ?? row.updated_at,
     deletedAt: row.deleted_at ?? undefined,
-    status: calculateStatus(row.opened_at, row.pao_months, row.is_sealed ?? false),
+    status: calculateStatus({
+      openedAt: row.opened_at,
+      paoMonths: row.pao_months,
+      isSealed: row.is_sealed ?? false,
+      expiresAt: row.expires_at ?? undefined,
+    }),
   };
 }
 

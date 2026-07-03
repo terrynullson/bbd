@@ -541,6 +541,21 @@ export function QuickAddSheet({
               onChange={setIsPackagingOpen}
             />
 
+            {!isPackagingOpen && (
+              <p className="text-xs leading-relaxed text-muted">
+                Удобнее отслеживать открытые средства. Для запаса укажите «Годен
+                до» в{' '}
+                <button
+                  type="button"
+                  onClick={handleManualFill}
+                  className="font-medium text-accent underline-offset-2 hover:underline"
+                >
+                  ручной форме
+                </button>
+                .
+              </p>
+            )}
+
             {error && <p className="text-xs text-expired">{error}</p>}
 
             <Button

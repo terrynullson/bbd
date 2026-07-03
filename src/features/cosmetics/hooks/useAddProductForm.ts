@@ -12,6 +12,7 @@ const DEFAULT_FORM = {
   barcode: '',
   paoMonths: 12,
   openedAt: new Date().toISOString().slice(0, 10),
+  expiresAt: '',
   category: 'other' as ProductCategory,
   imageUrl: '',
   notes: '',
@@ -30,6 +31,7 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
   const [barcode, setBarcode] = useState(DEFAULT_FORM.barcode);
   const [paoMonths, setPaoMonths] = useState(DEFAULT_FORM.paoMonths);
   const [openedAt, setOpenedAt] = useState(DEFAULT_FORM.openedAt);
+  const [expiresAt, setExpiresAt] = useState(DEFAULT_FORM.expiresAt);
   const [category, setCategory] = useState<ProductCategory>(DEFAULT_FORM.category);
   const [imageUrl, setImageUrl] = useState(DEFAULT_FORM.imageUrl);
   const [notes, setNotes] = useState(DEFAULT_FORM.notes);
@@ -44,6 +46,7 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
     setBarcode(values?.barcode ?? DEFAULT_FORM.barcode);
     setPaoMonths(values?.paoMonths ?? DEFAULT_FORM.paoMonths);
     setOpenedAt(toDateInputValue(values?.openedAt));
+    setExpiresAt(values?.expiresAt ? toDateInputValue(values.expiresAt) : '');
     setCategory(values?.category ?? DEFAULT_FORM.category);
     setImageUrl(values?.imageUrl ?? DEFAULT_FORM.imageUrl);
     setNotes(values?.notes ?? DEFAULT_FORM.notes);
@@ -70,13 +73,15 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
       barcode: barcode.trim() || undefined,
       paoMonths,
       openedAt: new Date(openedAt).toISOString(),
+      expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
+      expirySource: expiresAt ? 'user' : undefined,
       isSealed,
       category,
       imageUrl: imageUrl.trim() || undefined,
       notes: notes.trim() || undefined,
       lookupSource,
     };
-  }, [name, brand, barcode, paoMonths, openedAt, isSealed, category, imageUrl, notes, lookupSource]);
+  }, [name, brand, barcode, paoMonths, openedAt, expiresAt, isSealed, category, imageUrl, notes, lookupSource]);
 
   const handleSmartFill = useCallback(async () => {
     const trimmedName = name.trim();
@@ -132,6 +137,8 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
     setPaoMonths,
     openedAt,
     setOpenedAt,
+    expiresAt,
+    setExpiresAt,
     category,
     setCategory,
     imageUrl,

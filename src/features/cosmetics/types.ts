@@ -5,6 +5,8 @@ export type BarcodeTrust = 'verified' | 'unverified' | 'suspicious';
 
 export type PaoSource = 'user' | 'catalog' | 'preset' | 'ai_estimate';
 
+export type ExpirySource = 'user' | 'catalog' | 'ai_estimate';
+
 export type ProductGroup =
   | 'skincare'
   | 'makeup'
@@ -50,6 +52,8 @@ export interface CosmeticItem {
   productSubtype?: ProductSubtype;
   paoMonths: number;
   openedAt: string;
+  expiresAt?: string;
+  expirySource?: ExpirySource;
   isSealed?: boolean;
   status: CosmeticStatus;
   category?: ProductCategory;
@@ -78,6 +82,8 @@ export interface AddProductInput {
   productSubtype?: ProductSubtype;
   paoMonths: number;
   openedAt: string;
+  expiresAt?: string;
+  expirySource?: ExpirySource;
   isSealed?: boolean;
   category?: ProductCategory;
   imageUrl?: string;

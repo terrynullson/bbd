@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutGrid, LogIn, Plus, User } from 'lucide-react';
+import { NavIcon } from '@/components/icons/NavIcon';
 import { cn } from '@/lib/utils';
 import { haptic } from '@/lib/haptics';
 
@@ -60,7 +60,7 @@ export function BottomNavBar({
               : 'text-muted hover:text-text',
           )}
         >
-          <LayoutGrid className="h-6 w-6" strokeWidth={1.75} />
+          <NavIcon name="shelf" />
         </button>
 
         <div className="pointer-events-none absolute inset-x-0 flex justify-center">
@@ -70,7 +70,7 @@ export function BottomNavBar({
             aria-label="Добавить продукт"
             className="fab-button pointer-events-auto -mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-[var(--shadow-button)] transition-all hover:bg-accent-hover active:scale-[0.94]"
           >
-            <Plus className="h-6 w-6" strokeWidth={2} />
+            <NavIcon name="add" />
           </button>
         </div>
 
@@ -87,9 +87,9 @@ export function BottomNavBar({
           )}
         >
           {isSignedIn ? (
-            <User className="h-6 w-6" strokeWidth={1.75} />
+            <NavIcon name="profile" />
           ) : (
-            <LogIn className="h-6 w-6" strokeWidth={1.75} />
+            <NavIcon name="login" />
           )}
         </button>
       </div>

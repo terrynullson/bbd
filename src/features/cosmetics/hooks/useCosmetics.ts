@@ -250,7 +250,12 @@ export function useCosmetics() {
       productGroup: input.productGroup ?? taxonomy.group,
       productSubtype: input.productSubtype ?? taxonomy.subtype,
       id: crypto.randomUUID(),
-      status: calculateStatus(input.openedAt, input.paoMonths, input.isSealed),
+      status: calculateStatus({
+        openedAt: input.openedAt,
+        paoMonths: input.paoMonths,
+        isSealed: input.isSealed,
+        expiresAt: input.expiresAt,
+      }),
       createdAt: now,
       updatedAt: now,
       lookupSource: input.lookupSource ?? (input.barcode ? 'barcode' : 'manual'),
@@ -286,7 +291,12 @@ export function useCosmetics() {
                 input.productSubtype ??
                 inferTaxonomy(input.category, `${input.brand} ${input.name}`)
                   .subtype,
-              status: calculateStatus(input.openedAt, input.paoMonths, input.isSealed),
+              status: calculateStatus({
+        openedAt: input.openedAt,
+        paoMonths: input.paoMonths,
+        isSealed: input.isSealed,
+        expiresAt: input.expiresAt,
+      }),
               updatedAt: new Date().toISOString(),
               deletedAt: undefined,
             }
