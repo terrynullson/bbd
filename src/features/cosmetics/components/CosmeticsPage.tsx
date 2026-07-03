@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PageHero } from '@/components/layout/PageHero';
 import { BottomNavBar } from '@/components/layout/BottomNavBar';
 import { AddProductModal } from './AddProductModal';
@@ -8,8 +8,10 @@ import { QuickAddSheet } from './QuickAddSheet';
 import { ProfileSheet } from './ProfileSheet';
 import { CosmeticsDashboard } from './CosmeticsDashboard';
 import { EmptyState } from './EmptyState';
+import { ShelfFilters } from './ShelfFilters';
 import { ShelfTip } from './ShelfTip';
 import { InstallPrompt } from './InstallPrompt';
+import { applyShelfFilter, type ShelfFilter } from '../lib/shelf-filters';
 import { summarizeStatuses } from '../lib/sort-items';
 import { useCosmetics } from '../hooks/useCosmetics';
 import { APP_VERSION } from '@/lib/constants';
@@ -44,6 +46,7 @@ export function CosmeticsPage() {
   const [manualInitial, setManualInitial] = useState<Partial<AddProductInput>>();
   const [quickAddDraft, setQuickAddDraft] = useState<Partial<AddProductInput>>();
   const [deletedItem, setDeletedItem] = useState<CosmeticItem | null>(null);
+  const [shelfFilter, setShelfFilter] = useState<ShelfFilter>('all');
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mainRef = useRef<HTMLElement>(null);
 
@@ -105,6 +108,11 @@ export function CosmeticsPage() {
 
   useEffect(() => clearUndoTimer, []);
 
+  const filteredItems = useMemo(
+    () => applyShelfFilter(items, shelfFilter),
+    [items, shelfFilter],
+  );
+
   if (!isLoaded) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-bg text-muted">
@@ -164,11 +172,20 @@ export function CosmeticsPage() {
         ) : (
           <>
             <ShelfTip />
-            <CosmeticsDashboard
-              items={items}
-              onRemove={handleRemove}
-              onEdit={openEditModal}
-            />
+            <div className="flex flex-col gap-4">
+              <ShelfFilters value={shelfFilter} onChange={setShelfFilter} />
+              {filteredItems.length > 0 ? (
+                <CosmeticsDashboard
+                  items={filteredItems}
+                  onRemove={handleRemove}
+                  onEdit={openEditModal}
+                />
+              ) : (
+                <p className="rounded-[18px] border border-border/70 bg-bg px-4 py-8 text-center text-sm text-muted">
+                  Нет продуктов по этому фильтру
+                </p>
+              )}
+            </div>
           </>
         )}
 

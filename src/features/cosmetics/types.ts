@@ -14,6 +14,9 @@ export type ProductGroup =
   | 'body'
   | 'fragrance'
   | 'nails'
+  | 'mens'
+  | 'baby'
+  | 'derm'
   | 'other';
 
 export type ProductSubtype =

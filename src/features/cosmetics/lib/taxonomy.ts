@@ -1,5 +1,31 @@
 import type { CosmeticItem, ProductCategory, ProductGroup, ProductSubtype } from '../types';
 
+export const GROUP_LABELS: Record<ProductGroup, string> = {
+  skincare: 'Уход за кожей',
+  makeup: 'Макияж',
+  hair: 'Волосы',
+  body: 'Тело',
+  fragrance: 'Ароматы',
+  nails: 'Ногти',
+  mens: 'Мужское',
+  baby: 'Детское',
+  derm: 'Дерматология',
+  other: 'Прочее',
+};
+
+export const GROUP_ORDER: ProductGroup[] = [
+  'skincare',
+  'makeup',
+  'hair',
+  'body',
+  'fragrance',
+  'nails',
+  'mens',
+  'baby',
+  'derm',
+  'other',
+];
+
 const SUBTYPE_LABELS: Record<ProductSubtype, string> = {
   day_cream: 'Дневной крем',
   night_cream: 'Ночной крем',
@@ -41,6 +67,18 @@ export function inferTaxonomy(
   const lower = text.toLowerCase();
   let group: ProductGroup = 'other';
   let subtype: ProductSubtype = 'other';
+
+  if (/\bmen\b|\bmen's\b|мужск|для мужчин/i.test(lower)) {
+    group = 'mens';
+  } else if (/\bbaby\b|детск|для детей|\bkids\b/i.test(lower)) {
+    group = 'baby';
+  } else if (/\bderm|дермо|atoderm|для атопич/i.test(lower)) {
+    group = 'derm';
+  }
+
+  if (group !== 'other') {
+    return { group, subtype, label: SUBTYPE_LABELS[subtype] };
+  }
 
   switch (category) {
     case 'cream':

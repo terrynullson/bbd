@@ -1,5 +1,5 @@
-import { CosmeticCard } from './CosmeticCard';
-import { sortCosmeticItems } from '../lib/sort-items';
+import { ShelfSection } from './ShelfSection';
+import { buildShelfSections } from '../lib/group-items';
 import type { CosmeticItem } from '../types';
 
 type CosmeticsDashboardProps = {
@@ -13,22 +13,18 @@ export function CosmeticsDashboard({
   onRemove,
   onEdit,
 }: CosmeticsDashboardProps) {
-  const sorted = sortCosmeticItems(items);
+  const sections = buildShelfSections(items);
 
   return (
-    <div className="flex flex-col gap-3">
-      {sorted.map((item, index) => (
-        <div
-          key={item.id}
-          className="card-enter"
-          style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
-        >
-          <CosmeticCard
-            item={item}
-            onRemove={onRemove}
-            onEdit={onEdit}
-          />
-        </div>
+    <div className="flex flex-col gap-5">
+      {sections.map((section) => (
+        <ShelfSection
+          key={section.id}
+          title={section.title}
+          items={section.items}
+          onRemove={onRemove}
+          onEdit={onEdit}
+        />
       ))}
     </div>
   );
