@@ -41,6 +41,7 @@ export function CosmeticsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CosmeticItem | null>(null);
   const [manualInitial, setManualInitial] = useState<Partial<AddProductInput>>();
+  const [quickAddDraft, setQuickAddDraft] = useState<Partial<AddProductInput>>();
   const [deletedItem, setDeletedItem] = useState<CosmeticItem | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mainRef = useRef<HTMLElement>(null);
@@ -48,12 +49,15 @@ export function CosmeticsPage() {
   const isSheetOpen = isQuickAddOpen || isProfileOpen || isModalOpen;
   const isSignedIn = Boolean(user);
 
-  const openQuickAdd = () => {
+  const openQuickAdd = (draft?: Partial<AddProductInput>) => {
     setActiveTab('shelf');
+    setQuickAddDraft(draft);
     setIsQuickAddOpen(true);
   };
 
   const openManualAdd = (draft?: Partial<AddProductInput>) => {
+    setIsQuickAddOpen(false);
+    setQuickAddDraft(undefined);
     setEditingItem(null);
     setManualInitial(draft);
     setIsModalOpen(true);
@@ -62,6 +66,7 @@ export function CosmeticsPage() {
   const openEditModal = (item: CosmeticItem) => {
     setEditingItem(item);
     setManualInitial(undefined);
+    setQuickAddDraft(undefined);
     setIsModalOpen(true);
   };
 
@@ -113,7 +118,6 @@ export function CosmeticsPage() {
       ? `${summary.fresh} свежих · ${summary.expiring} истекают · ${summary.expired} просрочено`
       : null;
 
-  const bottomPad = 'pb-[calc(5.5rem+var(--safe-bottom))]';
   const toastPosition = isSheetOpen
     ? 'bottom-[calc(1rem+var(--safe-bottom))]'
     : 'bottom-[calc(6.25rem+var(--safe-bottom))]';
@@ -147,12 +151,12 @@ export function CosmeticsPage() {
   };
 
   return (
-    <div className="mx-auto min-h-dvh w-full max-w-lg bg-bg">
+    <div className="mx-auto flex h-dvh w-full max-w-lg flex-col bg-bg">
       <PageHero summary={summaryLine} />
 
       <main
         ref={mainRef}
-        className={`content-enter relative z-10 -mt-5 rounded-t-[28px] bg-surface px-4 pt-6 shadow-[0_-8px_32px_rgba(44,36,32,0.06)] ${bottomPad}`}
+        className="content-enter relative z-10 -mt-5 flex-1 overflow-y-auto overscroll-y-none rounded-t-[28px] bg-surface px-4 pt-6 shadow-[0_-8px_32px_rgba(44,36,32,0.06)] pb-[calc(5.5rem+var(--safe-bottom))]"
       >
         {items.length === 0 ? (
           <EmptyState />
@@ -194,14 +198,18 @@ export function CosmeticsPage() {
         isSignedIn={isSignedIn}
         isHidden={isSheetOpen}
         onShelfPress={handleShelfPress}
-        onAddPress={openQuickAdd}
+        onAddPress={() => openQuickAdd()}
         onAccountPress={handleAccountPress}
       />
 
       {isQuickAddOpen && (
         <QuickAddSheet
           localItems={items}
-          onClose={() => setIsQuickAddOpen(false)}
+          initialDraft={quickAddDraft}
+          onClose={() => {
+            setIsQuickAddOpen(false);
+            setQuickAddDraft(undefined);
+          }}
           onSubmit={(input) => addItem(input)}
           onManualFill={(draft) => openManualAdd(draft)}
         />
@@ -225,6 +233,12 @@ export function CosmeticsPage() {
             setIsModalOpen(false);
             setEditingItem(null);
             setManualInitial(undefined);
+          }}
+          onQuickAdd={(draft) => {
+            setIsModalOpen(false);
+            setEditingItem(null);
+            setManualInitial(undefined);
+            openQuickAdd(draft);
           }}
           onSubmit={(input) => {
             if (editingItem) {

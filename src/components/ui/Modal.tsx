@@ -17,7 +17,7 @@ type ModalProps = {
 };
 
 const DRAG_CLOSE_THRESHOLD = 96;
-const DRAG_START_THRESHOLD = 10;
+const DRAG_START_THRESHOLD = 8;
 
 function isDragBlockedTarget(target: EventTarget | null) {
   if (!(target instanceof Element)) return false;
@@ -49,6 +49,18 @@ export function Modal({ title, children, onClose, className }: ModalProps) {
     };
   }, []);
 
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel || !isDragging) return;
+
+    const blockTouchMove = (event: TouchEvent) => {
+      if (isDraggingRef.current) event.preventDefault();
+    };
+
+    panel.addEventListener('touchmove', blockTouchMove, { passive: false });
+    return () => panel.removeEventListener('touchmove', blockTouchMove);
+  }, [isDragging]);
+
   const resetDrag = () => {
     dragStartY.current = null;
     activePointerId.current = null;
@@ -56,6 +68,10 @@ export function Modal({ title, children, onClose, className }: ModalProps) {
     setIsDragging(false);
     setDragY(0);
     latestDragY.current = 0;
+
+    if (panelRef.current) {
+      panelRef.current.style.touchAction = '';
+    }
   };
 
   const updateDragY = (value: number) => {
@@ -78,6 +94,10 @@ export function Modal({ title, children, onClose, className }: ModalProps) {
 
     dragStartY.current = event.clientY;
     activePointerId.current = event.pointerId;
+
+    if (panelRef.current) {
+      panelRef.current.style.touchAction = 'none';
+    }
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -91,6 +111,11 @@ export function Modal({ title, children, onClose, className }: ModalProps) {
 
       isDraggingRef.current = true;
       setIsDragging(true);
+
+      if (contentRef.current) {
+        contentRef.current.style.overflow = 'hidden';
+      }
+
       panelRef.current?.setPointerCapture(event.pointerId);
     }
 
@@ -103,12 +128,18 @@ export function Modal({ title, children, onClose, className }: ModalProps) {
     updateDragY(0);
   };
 
-  const handlePointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const finishDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (dragStartY.current === null) return;
     if (activePointerId.current !== event.pointerId) return;
 
     if (isDraggingRef.current) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+      if (panelRef.current?.hasPointerCapture(event.pointerId)) {
+        panelRef.current.releasePointerCapture(event.pointerId);
+      }
+
+      if (contentRef.current) {
+        contentRef.current.style.overflow = '';
+      }
 
       if (latestDragY.current > DRAG_CLOSE_THRESHOLD) {
         onClose();
@@ -128,20 +159,20 @@ export function Modal({ title, children, onClose, className }: ModalProps) {
       <div
         ref={panelRef}
         className={cn(
-          'sheet-panel flex max-h-[min(92dvh,780px)] w-full max-w-lg flex-col rounded-t-[28px] bg-surface shadow-[var(--shadow-modal)]',
+          'sheet-panel flex max-h-[min(92dvh,780px)] w-full max-w-lg flex-col rounded-t-[28px] bg-surface shadow-[var(--shadow-modal)] will-change-transform',
           isDragging && 'select-none',
           className,
         )}
         onClick={(event) => event.stopPropagation()}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerEnd}
-        onPointerCancel={handlePointerEnd}
+        onPointerUp={finishDrag}
+        onPointerCancel={finishDrag}
         role="dialog"
         aria-modal="true"
         aria-label={title ?? 'Диалог'}
         style={{
-          transform: `translateY(${dragY}px)`,
+          transform: `translate3d(0, ${dragY}px, 0)`,
           transition: isDragging
             ? 'none'
             : 'transform 0.28s cubic-bezier(0.32, 0.72, 0, 1)',
@@ -158,7 +189,7 @@ export function Modal({ title, children, onClose, className }: ModalProps) {
 
         <div
           ref={contentRef}
-          className="safe-bottom overflow-y-auto overscroll-contain px-5 pb-5"
+          className="safe-bottom min-h-0 flex-1 overflow-y-auto overscroll-y-none px-5 pb-5"
         >
           {children}
         </div>

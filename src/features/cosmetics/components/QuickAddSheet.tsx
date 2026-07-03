@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { BarcodeScanner } from './BarcodeScanner';
 import { PackagingToggle } from './PackagingToggle';
+import { ProductMatchPicker } from './ProductMatchPicker';
 import {
   SuggestionDropdown,
   useSuggestionKeyboard,
@@ -17,14 +18,22 @@ import { lookupProductByBarcode } from '../api/lookup-product';
 import { fetchProductSuggestions } from '../api/suggest-products';
 import { inferCategoryFromText } from '../lib/categories';
 import { haptic } from '@/lib/haptics';
-import type { AddProductInput, CosmeticItem, ProductSuggestion } from '../types';
+import type {
+  AddProductInput,
+  AnalyzeProductResponse,
+  CosmeticItem,
+  ProductSuggestion,
+} from '../types';
 
 type QuickAddSheetProps = {
   localItems: CosmeticItem[];
+  initialDraft?: Partial<AddProductInput>;
   onClose: () => void;
   onSubmit: (input: AddProductInput) => void;
   onManualFill: (draft: Partial<AddProductInput>) => void;
 };
+
+type MatchStep = 'form' | 'matches' | 'ai';
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -48,18 +57,39 @@ function mergeSuggestions(
       seen.add(key);
       return true;
     })
-    .slice(0, 6);
+    .slice(0, 8);
+}
+
+function suggestionToInput(
+  suggestion: ProductSuggestion,
+  isSealed: boolean,
+  barcode?: string,
+): AddProductInput {
+  return {
+    name: suggestion.name,
+    brand: suggestion.brand ?? 'Неизвестный бренд',
+    barcode: barcode || suggestion.barcode,
+    paoMonths: suggestion.paoMonths ?? 12,
+    openedAt: new Date(todayIso()).toISOString(),
+    isSealed,
+    category: suggestion.category,
+    imageUrl: suggestion.imageUrl,
+    lookupSource: suggestion.source === 'catalog' ? 'catalog' : 'manual',
+  };
 }
 
 export function QuickAddSheet({
   localItems,
+  initialDraft,
   onClose,
   onSubmit,
   onManualFill,
 }: QuickAddSheetProps) {
-  const [name, setName] = useState('');
-  const [barcode, setBarcode] = useState('');
-  const [isPackagingOpen, setIsPackagingOpen] = useState(true);
+  const [name, setName] = useState(initialDraft?.name ?? '');
+  const [barcode, setBarcode] = useState(initialDraft?.barcode ?? '');
+  const [isPackagingOpen, setIsPackagingOpen] = useState(
+    initialDraft?.isSealed === undefined ? true : !initialDraft.isSealed,
+  );
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -68,15 +98,11 @@ export function QuickAddSheet({
   );
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [isFocused, setIsFocused] = useState(false);
-
-  useEffect(() => {
-    setName('');
-    setBarcode('');
-    setIsPackagingOpen(true);
-    setError('');
-    setRemoteSuggestions([]);
-    setHighlightIndex(-1);
-  }, []);
+  const [matchStep, setMatchStep] = useState<MatchStep>('form');
+  const [matchSuggestions, setMatchSuggestions] = useState<ProductSuggestion[]>(
+    [],
+  );
+  const [aiResult, setAiResult] = useState<AnalyzeProductResponse | null>(null);
 
   const localSuggestions = useMemo(() => {
     const query = normalizeSuggestion(name);
@@ -124,9 +150,7 @@ export function QuickAddSheet({
     name: name.trim() || undefined,
     barcode: barcode.trim() || undefined,
     isSealed: !isPackagingOpen,
-    openedAt: isPackagingOpen
-      ? new Date(todayIso()).toISOString()
-      : new Date(todayIso()).toISOString(),
+    openedAt: new Date(todayIso()).toISOString(),
     lookupSource: 'manual',
   });
 
@@ -148,13 +172,39 @@ export function QuickAddSheet({
     highlightIndex,
     setHighlightIndex,
     onPick: applySuggestion,
-    enabled: isFocused,
+    enabled: isFocused && matchStep === 'form',
   });
 
   const submitProduct = (input: AddProductInput) => {
     onSubmit(input);
     haptic('success');
     onClose();
+  };
+
+  const collectMatches = async (trimmedName: string) => {
+    const query = normalizeSuggestion(trimmedName);
+    const local =
+      query.length < 2
+        ? []
+        : localItems
+            .filter((product) => normalizeSuggestion(product.name).includes(query))
+            .map((product) => ({
+              id: product.id,
+              brand: product.brand,
+              name: product.name,
+              barcode: product.barcode,
+              paoMonths: product.paoMonths,
+              category: product.category,
+              imageUrl: product.imageUrl,
+              source: 'local' as const,
+            }));
+
+    const remote =
+      query.length >= 2
+        ? await fetchProductSuggestions({ type: 'product', query: trimmedName })
+        : [];
+
+    return mergeSuggestions(local, remote);
   };
 
   const handleQuickSubmit = async () => {
@@ -176,19 +226,30 @@ export function QuickAddSheet({
       if (trimmedBarcode) {
         const lookup = await lookupProductByBarcode(trimmedBarcode);
         if (lookup.found && lookup.name) {
-          submitProduct({
+          const lookupSuggestion: ProductSuggestion = {
+            id: `lookup-${trimmedBarcode}`,
+            brand: lookup.brand,
             name: lookup.name,
-            brand: lookup.brand ?? 'Неизвестный бренд',
             barcode: trimmedBarcode,
-            paoMonths: lookup.paoMonths ?? 12,
-            openedAt: new Date(todayIso()).toISOString(),
-            isSealed,
+            paoMonths: lookup.paoMonths,
             category: lookup.category,
             imageUrl: lookup.imageUrl,
-            lookupSource: lookup.source ?? 'barcode',
-          });
+            source: 'catalog',
+          };
+          setMatchSuggestions([lookupSuggestion]);
+          setAiResult(null);
+          setMatchStep('matches');
           return;
         }
+      }
+
+      const matches = await collectMatches(trimmedName);
+
+      if (matches.length > 0) {
+        setMatchSuggestions(matches);
+        setAiResult(null);
+        setMatchStep('matches');
+        return;
       }
 
       const result = await analyzeProduct({
@@ -196,28 +257,42 @@ export function QuickAddSheet({
         barcode: trimmedBarcode || undefined,
       });
 
-      submitProduct({
-        name: result.name,
-        brand: result.brand,
-        barcode: trimmedBarcode || undefined,
-        paoMonths: result.paoMonths,
-        openedAt: new Date(todayIso()).toISOString(),
-        isSealed,
-        category:
-          result.category ??
-          inferCategoryFromText(`${result.brand} ${result.name}`),
-        lookupSource: trimmedBarcode ? 'ai-barcode' : 'ai',
-      });
+      setMatchSuggestions([]);
+      setAiResult(result);
+      setMatchStep('ai');
     } catch (submitError) {
       setError(
         submitError instanceof Error
           ? submitError.message
-          : 'Не удалось добавить продукт',
+          : 'Не удалось найти продукт',
       );
       haptic('error');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePickSuggestion = (suggestion: ProductSuggestion) => {
+    submitProduct(
+      suggestionToInput(suggestion, !isPackagingOpen, barcode.trim() || undefined),
+    );
+  };
+
+  const handleConfirmAi = () => {
+    if (!aiResult) return;
+
+    submitProduct({
+      name: aiResult.name,
+      brand: aiResult.brand,
+      barcode: barcode.trim() || undefined,
+      paoMonths: aiResult.paoMonths,
+      openedAt: new Date(todayIso()).toISOString(),
+      isSealed: !isPackagingOpen,
+      category:
+        aiResult.category ??
+        inferCategoryFromText(`${aiResult.brand} ${aiResult.name}`),
+      lookupSource: barcode.trim() ? 'ai-barcode' : 'ai',
+    });
   };
 
   const handleBarcodeScan = async (code: string) => {
@@ -229,13 +304,31 @@ export function QuickAddSheet({
 
     try {
       const lookup = await lookupProductByBarcode(code);
-      if (lookup.found) {
-        if (lookup.name) setName(lookup.name);
+      if (lookup.found && lookup.name) {
+        setName(lookup.name);
+        setMatchSuggestions([
+          {
+            id: `lookup-${code}`,
+            brand: lookup.brand,
+            name: lookup.name,
+            barcode: code,
+            paoMonths: lookup.paoMonths,
+            category: lookup.category,
+            imageUrl: lookup.imageUrl,
+            source: 'catalog',
+          },
+        ]);
+        setAiResult(null);
+        setMatchStep('matches');
+        haptic('success');
         return;
       }
 
       const result = await analyzeProduct({ barcode: code });
       setName(result.name);
+      setMatchSuggestions([]);
+      setAiResult(result);
+      setMatchStep('ai');
       haptic('success');
     } catch (scanError) {
       setError(
@@ -254,102 +347,123 @@ export function QuickAddSheet({
     void handleQuickSubmit();
   };
 
-  const showAiHint = name.trim().length >= 2 && !isLoading;
+  const showAiHint = name.trim().length >= 2 && !isLoading && matchStep === 'form';
+
+  const matchTitle =
+    matchSuggestions.length > 1
+      ? 'Найдено несколько вариантов — выберите:'
+      : 'Найден подходящий вариант:';
 
   return (
     <>
       <Modal title="Новый продукт" onClose={onClose}>
-        <form onSubmit={handleFormSubmit} className="flex flex-col gap-5 pt-1">
-          <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
-              Название
-            </p>
-            <div className="relative">
-              <Input
-                autoFocus
-                aria-label="Название продукта"
-                aria-autocomplete="list"
-                aria-expanded={isFocused && suggestions.length > 0}
-                placeholder="Например, увлажняющий крем"
-                value={name}
-                disabled={isLoading}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setTimeout(() => setIsFocused(false), 120)}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  if (error) setError('');
-                }}
-                onKeyDown={(event) => {
-                  if (
-                    event.key === 'Enter' &&
-                    (highlightIndex < 0 || suggestions.length === 0)
-                  ) {
-                    return;
-                  }
-                  handleSuggestionKeyDown(event);
-                }}
-                className="pr-12"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  haptic('light');
-                  setIsScannerOpen(true);
-                }}
-                disabled={isLoading}
-                aria-label="Сканировать штрих-код"
-                className="absolute right-1 top-1/2 h-10 w-10 -translate-y-1/2 shadow-none"
-              >
-                <ScanBarcode className="h-5 w-5 text-muted" />
-              </Button>
-              {isFocused && (
-                <SuggestionDropdown
-                  suggestions={suggestions}
-                  mode="product"
-                  highlightIndex={highlightIndex}
-                  onHighlight={setHighlightIndex}
-                  onPick={applySuggestion}
+        {matchStep === 'form' ? (
+          <form onSubmit={handleFormSubmit} className="flex flex-col gap-5 pt-1">
+            <div>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+                Название
+              </p>
+              <div className="relative">
+                <Input
+                  autoFocus
+                  aria-label="Название продукта"
+                  aria-autocomplete="list"
+                  aria-expanded={isFocused && suggestions.length > 0}
+                  placeholder="Например, увлажняющий крем"
+                  value={name}
+                  disabled={isLoading}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setTimeout(() => setIsFocused(false), 120)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (error) setError('');
+                  }}
+                  onKeyDown={(event) => {
+                    if (
+                      event.key === 'Enter' &&
+                      (highlightIndex < 0 || suggestions.length === 0)
+                    ) {
+                      return;
+                    }
+                    handleSuggestionKeyDown(event);
+                  }}
+                  className="pr-12"
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    haptic('light');
+                    setIsScannerOpen(true);
+                  }}
+                  disabled={isLoading}
+                  aria-label="Сканировать штрих-код"
+                  className="absolute right-1 top-1/2 h-10 w-10 -translate-y-1/2 shadow-none"
+                >
+                  <ScanBarcode className="h-5 w-5 text-muted" />
+                </Button>
+                {isFocused && (
+                  <SuggestionDropdown
+                    suggestions={suggestions}
+                    mode="product"
+                    highlightIndex={highlightIndex}
+                    onHighlight={setHighlightIndex}
+                    onPick={applySuggestion}
+                  />
+                )}
+              </div>
+              {barcode && (
+                <p className="mt-2 text-xs text-muted">Штрих-код: {barcode}</p>
+              )}
+              {showAiHint && (
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-muted">
+                  <Sparkles className="h-3.5 w-3.5 text-accent" />
+                  При добавлении покажем варианты или спросим подтверждение
+                </p>
               )}
             </div>
-            {barcode && (
-              <p className="mt-2 text-xs text-muted">Штрих-код: {barcode}</p>
-            )}
-            {showAiHint && (
-              <p className="mt-2 flex items-center gap-1.5 text-xs text-muted">
-                <Sparkles className="h-3.5 w-3.5 text-accent" />
-                ИИ подберёт бренд и срок при добавлении
-              </p>
-            )}
-          </div>
 
-          <PackagingToggle
-            isOpen={isPackagingOpen}
-            onChange={setIsPackagingOpen}
+            <PackagingToggle
+              isOpen={isPackagingOpen}
+              onChange={setIsPackagingOpen}
+            />
+
+            {error && <p className="text-xs text-expired">{error}</p>}
+
+            <Button
+              type="submit"
+              size="lg"
+              disabled={isLoading}
+              className="h-12 w-full rounded-[14px]"
+            >
+              {isLoading ? <Spinner /> : 'Добавить'}
+            </Button>
+
+            <button
+              type="button"
+              onClick={handleManualFill}
+              disabled={isLoading}
+              className="text-center text-sm text-muted underline-offset-2 transition-colors hover:text-text hover:underline disabled:opacity-50"
+            >
+              Заполнить вручную
+            </button>
+          </form>
+        ) : (
+          <ProductMatchPicker
+            suggestions={matchStep === 'matches' ? matchSuggestions : []}
+            aiResult={matchStep === 'ai' ? aiResult : null}
+            title={matchStep === 'ai' ? 'Проверьте результат ИИ:' : matchTitle}
+            onPickSuggestion={handlePickSuggestion}
+            onConfirmAi={handleConfirmAi}
+            onBack={() => {
+              setMatchStep('form');
+              setMatchSuggestions([]);
+              setAiResult(null);
+              haptic('light');
+            }}
           />
-
-          {error && <p className="text-xs text-expired">{error}</p>}
-
-          <Button
-            type="submit"
-            size="lg"
-            disabled={isLoading}
-            className="h-12 w-full rounded-[14px]"
-          >
-            {isLoading ? <Spinner /> : 'Добавить'}
-          </Button>
-
-          <button
-            type="button"
-            onClick={handleManualFill}
-            disabled={isLoading}
-            className="text-center text-sm text-muted underline-offset-2 transition-colors hover:text-text hover:underline disabled:opacity-50"
-          >
-            Заполнить вручную
-          </button>
-        </form>
+        )}
       </Modal>
 
       {isScannerOpen && (

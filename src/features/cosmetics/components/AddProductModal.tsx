@@ -30,6 +30,7 @@ import type {
 type AddProductModalProps = {
   onClose: () => void;
   onSubmit: (input: AddProductInput) => void;
+  onQuickAdd?: (draft: Partial<AddProductInput>) => void;
   item?: CosmeticItem | null;
   initialValues?: Partial<AddProductInput>;
   localItems?: CosmeticItem[];
@@ -66,6 +67,7 @@ export function AddProductModal({
   localItems = [],
   onClose,
   onSubmit,
+  onQuickAdd,
 }: AddProductModalProps) {
   const { user } = useAuth();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -294,32 +296,7 @@ export function AddProductModal({
       <Modal onClose={onClose}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 pt-1">
           <div className="relative">
-            <Input
-              aria-label="Бренд"
-              aria-autocomplete="list"
-              aria-expanded={brandFocused && brandSuggestions.length > 0}
-              placeholder="Бренд"
-              value={form.brand}
-              onFocus={() => setBrandFocused(true)}
-              onBlur={() => setTimeout(() => setBrandFocused(false), 120)}
-              onChange={(e) => {
-                form.setBrand(e.target.value);
-                if (form.smartError) form.setSmartError('');
-              }}
-              onKeyDown={handleBrandKeyDown}
-            />
-            {brandFocused && (
-              <SuggestionDropdown
-                suggestions={brandSuggestions}
-                mode="brand"
-                highlightIndex={brandHighlight}
-                onHighlight={setBrandHighlight}
-                onPick={handleBrandPick}
-              />
-            )}
-          </div>
-
-          <div className="relative">
+            <FieldLabel>Название</FieldLabel>
             <div className="flex items-stretch gap-2">
               <Input
                 required
@@ -357,28 +334,58 @@ export function AddProductModal({
             )}
           </div>
 
-          <div className="flex items-stretch gap-2">
+          <div className="relative">
+            <FieldLabel>Бренд</FieldLabel>
             <Input
-              aria-label="Штрих-код"
-              placeholder="Штрих-код"
-              value={form.barcode}
+              aria-label="Бренд"
+              aria-autocomplete="list"
+              aria-expanded={brandFocused && brandSuggestions.length > 0}
+              placeholder="Бренд"
+              value={form.brand}
+              onFocus={() => setBrandFocused(true)}
+              onBlur={() => setTimeout(() => setBrandFocused(false), 120)}
               onChange={(e) => {
-                form.setBarcode(e.target.value);
-                setBarcodeAiSuggestion(null);
-                setLookupError('');
+                form.setBrand(e.target.value);
+                if (form.smartError) form.setSmartError('');
               }}
-              className="min-w-0 flex-1"
+              onKeyDown={handleBrandKeyDown}
             />
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setIsScannerOpen(true)}
-              aria-label="Сканировать штрих-код"
-              disabled={isLookupLoading || isBarcodeAiLoading}
-              className="h-12 w-12 shrink-0 rounded-[14px] p-0 shadow-none"
-            >
-              <Camera className="h-5 w-5" />
-            </Button>
+            {brandFocused && (
+              <SuggestionDropdown
+                suggestions={brandSuggestions}
+                mode="brand"
+                highlightIndex={brandHighlight}
+                onHighlight={setBrandHighlight}
+                onPick={handleBrandPick}
+              />
+            )}
+          </div>
+
+          <div>
+            <FieldLabel>Штрих-код</FieldLabel>
+            <div className="flex items-stretch gap-2">
+              <Input
+                aria-label="Штрих-код"
+                placeholder="Штрих-код"
+                value={form.barcode}
+                onChange={(e) => {
+                  form.setBarcode(e.target.value);
+                  setBarcodeAiSuggestion(null);
+                  setLookupError('');
+                }}
+                className="min-w-0 flex-1"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setIsScannerOpen(true)}
+                aria-label="Сканировать штрих-код"
+                disabled={isLookupLoading || isBarcodeAiLoading}
+                className="h-12 w-12 shrink-0 rounded-[14px] p-0 shadow-none"
+              >
+                <Camera className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
           {(isLookupLoading || isBarcodeAiLoading || lookupError) && (
             <p
@@ -463,6 +470,30 @@ export function AddProductModal({
           <Button type="submit" size="lg" className="mt-1 h-12 w-full rounded-[14px]">
             {isEditing ? 'Сохранить изменения' : 'Сохранить'}
           </Button>
+
+          {!isEditing && onQuickAdd && (
+            <button
+              type="button"
+              onClick={() => {
+                onQuickAdd({
+                  name: form.name.trim() || undefined,
+                  brand: form.brand.trim() || undefined,
+                  barcode: form.barcode.trim() || undefined,
+                  isSealed: form.isSealed,
+                  openedAt: form.openedAt
+                    ? new Date(form.openedAt).toISOString()
+                    : undefined,
+                  paoMonths: form.paoMonths,
+                  category: form.category,
+                  imageUrl: form.imageUrl.trim() || undefined,
+                  lookupSource: form.lookupSource,
+                });
+              }}
+              className="text-center text-sm text-muted underline-offset-2 transition-colors hover:text-text hover:underline"
+            >
+              Добавить по ШК
+            </button>
+          )}
         </form>
       </Modal>
 
