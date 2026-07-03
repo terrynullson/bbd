@@ -38,6 +38,10 @@ function getBearerToken(request: NextRequest) {
   return match?.[1];
 }
 
+function sanitizeIlike(value: string) {
+  return value.replace(/[%_]/g, '');
+}
+
 function dedupeSuggestions(items: ProductSuggestion[]) {
   const seen = new Set<string>();
   const result: ProductSuggestion[] = [];
@@ -56,7 +60,7 @@ export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get('q')?.trim() ?? '';
   const type = (request.nextUrl.searchParams.get('type') ?? 'product') as SuggestType;
   const brand = request.nextUrl.searchParams.get('brand')?.trim() ?? '';
-  const normalizedQ = normalizeSearchText(q);
+  const normalizedQ = sanitizeIlike(normalizeSearchText(q));
 
   if (normalizedQ.length < 2 || !['brand', 'product'].includes(type)) {
     return NextResponse.json({ suggestions: [] });
@@ -73,7 +77,7 @@ export async function GET(request: NextRequest) {
     const { data } = await supabase
       .from('brand_catalog')
       .select('id,name')
-      .ilike('normalized_name', `${normalizedQ}%`)
+      .ilike('normalized_name', `%${normalizedQ}%`)
       .order('usage_count', { ascending: false })
       .limit(SUGGEST_LIMIT);
 
@@ -88,13 +92,21 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('product_catalog')
       .select('id,brand,name,barcode,default_pao_months,category,image_url')
-      .or(`normalized_name.ilike.${normalizedQ}%,normalized_brand.ilike.${normalizedQ}%`)
+      .or(
+        `normalized_name.ilike.%${normalizedQ}%,normalized_brand.ilike.%${normalizedQ}%`,
+      )
       .order('usage_count', { ascending: false })
       .limit(SUGGEST_LIMIT);
 
-    const normalizedBrand = normalizeSearchText(brand);
+    const normalizedBrand = sanitizeIlike(normalizeSearchText(brand));
     if (normalizedBrand.length >= 2) {
-      query = query.ilike('normalized_brand', `${normalizedBrand}%`);
+      query = supabase
+        .from('product_catalog')
+        .select('id,brand,name,barcode,default_pao_months,category,image_url')
+        .ilike('normalized_brand', `%${normalizedBrand}%`)
+        .ilike('normalized_name', `%${normalizedQ}%`)
+        .order('usage_count', { ascending: false })
+        .limit(SUGGEST_LIMIT);
     }
 
     const { data } = await query;
@@ -116,21 +128,33 @@ export async function GET(request: NextRequest) {
   const authToken = getBearerToken(request);
   if (authToken) {
     const userClient = getSupabaseServerClient({ authToken });
-    const userResponse = userClient
-      ? type === 'brand'
-        ? await userClient
-            .from('user_products')
-            .select('id,brand,name,barcode,pao_months,category,image_url')
-            .ilike('brand', `${q}%`)
-            .is('deleted_at', null)
-            .limit(SUGGEST_LIMIT)
-        : await userClient
-            .from('user_products')
-            .select('id,brand,name,barcode,pao_months,category,image_url')
-            .or(`name.ilike.%${q}%,brand.ilike.%${q}%`)
-            .is('deleted_at', null)
-            .limit(SUGGEST_LIMIT)
-      : { data: [] };
+    let userResponse: { data: UserProductRow[] | null } = { data: [] };
+
+    if (userClient) {
+      if (type === 'brand') {
+        userResponse = await userClient
+          .from('user_products')
+          .select('id,brand,name,barcode,pao_months,category,image_url')
+          .ilike('brand', `%${q}%`)
+          .is('deleted_at', null)
+          .limit(SUGGEST_LIMIT);
+      } else if (brand.trim().length >= 2) {
+        userResponse = await userClient
+          .from('user_products')
+          .select('id,brand,name,barcode,pao_months,category,image_url')
+          .ilike('brand', `%${brand}%`)
+          .ilike('name', `%${q}%`)
+          .is('deleted_at', null)
+          .limit(SUGGEST_LIMIT);
+      } else {
+        userResponse = await userClient
+          .from('user_products')
+          .select('id,brand,name,barcode,pao_months,category,image_url')
+          .or(`name.ilike.%${q}%,brand.ilike.%${q}%`)
+          .is('deleted_at', null)
+          .limit(SUGGEST_LIMIT);
+      }
+    }
 
     suggestions.unshift(
       ...((userResponse.data ?? []) as UserProductRow[]).map((row) => ({

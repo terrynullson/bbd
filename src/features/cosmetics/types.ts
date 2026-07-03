@@ -22,7 +22,13 @@ export interface CosmeticItem {
   updatedAt: string;
   deletedAt?: string;
   notes?: string;
-  lookupSource?: 'manual' | 'ai' | 'barcode' | 'open-beauty-facts';
+  lookupSource?:
+    | 'manual'
+    | 'ai'
+    | 'ai-barcode'
+    | 'barcode'
+    | 'open-beauty-facts'
+    | 'catalog';
 }
 
 export interface AddProductInput {
@@ -64,7 +70,8 @@ export interface LookupProductResponse {
   barcode?: string;
   paoMonths?: number;
   category?: ProductCategory;
-  source?: 'open-beauty-facts';
+  imageUrl?: string;
+  source?: 'open-beauty-facts' | 'catalog';
 }
 
 export interface ProductSuggestion {

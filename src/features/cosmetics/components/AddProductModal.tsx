@@ -1,17 +1,30 @@
 'use client';
 
-import { Camera, Sparkles } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { BarcodeScanner } from './BarcodeScanner';
 import { PaoSelector } from './PaoSelector';
+import { ProductPhotoPicker } from './ProductPhotoPicker';
+import { SmartFillButton } from './SmartFillButton';
+import {
+  SuggestionDropdown,
+  useSuggestionKeyboard,
+} from './SuggestionDropdown';
 import { upsertCatalogProduct } from '../api/catalog-product';
+import { analyzeProduct } from '../api/analyze-product';
 import { lookupProductByBarcode } from '../api/lookup-product';
 import { fetchProductSuggestions } from '../api/suggest-products';
 import { useAddProductForm } from '../hooks/useAddProductForm';
-import type { AddProductInput, CosmeticItem, ProductSuggestion } from '../types';
+import { useAuth } from '@/lib/supabase/use-auth';
+import type {
+  AddProductInput,
+  AnalyzeProductResponse,
+  CosmeticItem,
+  ProductSuggestion,
+} from '../types';
 
 type AddProductModalProps = {
   onClose: () => void;
@@ -45,42 +58,25 @@ function mergeSuggestions(
   }).slice(0, 8);
 }
 
-function SuggestionList({
-  suggestions,
-  onPick,
-}: {
-  suggestions: ProductSuggestion[];
-  onPick: (suggestion: ProductSuggestion) => void;
-}) {
-  if (suggestions.length === 0) return null;
-
-  return (
-    <div className="-mt-2 flex flex-wrap gap-2">
-      {suggestions.map((suggestion) => (
-        <button
-          key={`${suggestion.source}-${suggestion.id}`}
-          type="button"
-          onClick={() => onPick(suggestion)}
-          className="rounded-full border border-border bg-bg px-3 py-1.5 text-xs text-muted transition-colors hover:border-accent/40 hover:text-accent"
-        >
-          {suggestion.brand ? `${suggestion.brand} · ${suggestion.name}` : suggestion.name}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function AddProductModal({
   item,
   localItems = [],
   onClose,
   onSubmit,
 }: AddProductModalProps) {
+  const { user } = useAuth();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isLookupLoading, setIsLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState('');
   const [remoteBrandSuggestions, setRemoteBrandSuggestions] = useState<ProductSuggestion[]>([]);
   const [remoteProductSuggestions, setRemoteProductSuggestions] = useState<ProductSuggestion[]>([]);
+  const [brandHighlight, setBrandHighlight] = useState(-1);
+  const [productHighlight, setProductHighlight] = useState(-1);
+  const [brandFocused, setBrandFocused] = useState(false);
+  const [productFocused, setProductFocused] = useState(false);
+  const [barcodeAiSuggestion, setBarcodeAiSuggestion] =
+    useState<AnalyzeProductResponse | null>(null);
+  const [isBarcodeAiLoading, setIsBarcodeAiLoading] = useState(false);
   const form = useAddProductForm(item ?? undefined);
   const isEditing = Boolean(item);
 
@@ -89,7 +85,7 @@ export function AddProductModal({
     if (query.length < 2) return [];
 
     return localItems
-      .filter((product) => normalizeSuggestion(product.brand).startsWith(query))
+      .filter((product) => normalizeSuggestion(product.brand).includes(query))
       .map((product) => ({
         id: product.id,
         name: product.brand,
@@ -131,6 +127,14 @@ export function AddProductModal({
   );
 
   useEffect(() => {
+    setBrandHighlight(brandSuggestions.length > 0 ? 0 : -1);
+  }, [brandSuggestions]);
+
+  useEffect(() => {
+    setProductHighlight(productSuggestions.length > 0 ? 0 : -1);
+  }, [productSuggestions]);
+
+  useEffect(() => {
     if (form.brand.trim().length < 2) {
       setRemoteBrandSuggestions([]);
       return;
@@ -168,8 +172,66 @@ export function AddProductModal({
     if (suggestion.barcode) form.setBarcode(suggestion.barcode);
     if (suggestion.paoMonths) form.setPaoMonths(suggestion.paoMonths);
     if (suggestion.category) form.setCategory(suggestion.category);
-    form.setImageUrl(suggestion.imageUrl ?? '');
-    form.setLookupSource(suggestion.source === 'catalog' ? 'barcode' : 'manual');
+    if (suggestion.imageUrl) form.setImageUrl(suggestion.imageUrl);
+    form.setLookupSource(suggestion.source === 'catalog' ? 'catalog' : 'manual');
+    setProductFocused(false);
+    setBrandFocused(false);
+  };
+
+  const handleBrandPick = (suggestion: ProductSuggestion) => {
+    form.setBrand(suggestion.name);
+    setBrandFocused(false);
+  };
+
+  const handleBrandKeyDown = useSuggestionKeyboard({
+    suggestions: brandSuggestions,
+    highlightIndex: brandHighlight,
+    setHighlightIndex: setBrandHighlight,
+    onPick: handleBrandPick,
+    enabled: brandFocused,
+  });
+
+  const handleProductKeyDown = useSuggestionKeyboard({
+    suggestions: productSuggestions,
+    highlightIndex: productHighlight,
+    setHighlightIndex: setProductHighlight,
+    onPick: applyProductSuggestion,
+    enabled: productFocused,
+  });
+
+  const applyLookupResult = (result: {
+    brand?: string;
+    name?: string;
+    paoMonths?: number;
+    category?: AddProductInput['category'];
+    imageUrl?: string;
+    source?: 'open-beauty-facts' | 'catalog';
+  }) => {
+    if (result.brand) form.setBrand(result.brand);
+    if (result.name) form.setName(result.name);
+    if (result.paoMonths) form.setPaoMonths(result.paoMonths);
+    if (result.category) form.setCategory(result.category);
+    if (result.imageUrl) form.setImageUrl(result.imageUrl);
+    form.setLookupSource(result.source ?? 'barcode');
+  };
+
+  const requestBarcodeAiSuggestion = async (code: string) => {
+    setIsBarcodeAiLoading(true);
+    setBarcodeAiSuggestion(null);
+    setLookupError('');
+
+    try {
+      const suggestion = await analyzeProduct({ barcode: code });
+      setBarcodeAiSuggestion(suggestion);
+    } catch (error) {
+      setLookupError(
+        error instanceof Error
+          ? error.message
+          : 'Не удалось угадать продукт по штрих-коду',
+      );
+    } finally {
+      setIsBarcodeAiLoading(false);
+    }
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -187,21 +249,18 @@ export function AddProductModal({
     form.setBarcode(code);
     setIsScannerOpen(false);
     setLookupError('');
+    setBarcodeAiSuggestion(null);
     setIsLookupLoading(true);
 
     try {
       const result = await lookupProductByBarcode(code);
 
-      if (!result.found) {
-        setLookupError('Продукт не найден в базе. Можно заполнить вручную или через ИИ.');
+      if (result.found) {
+        applyLookupResult(result);
         return;
       }
 
-      if (result.brand) form.setBrand(result.brand);
-      if (result.name) form.setName(result.name);
-      if (result.paoMonths) form.setPaoMonths(result.paoMonths);
-      if (result.category) form.setCategory(result.category);
-      form.setLookupSource('open-beauty-facts');
+      await requestBarcodeAiSuggestion(code);
     } catch (error) {
       setLookupError(
         error instanceof Error
@@ -213,64 +272,85 @@ export function AddProductModal({
     }
   };
 
+  const applyBarcodeAiSuggestion = () => {
+    if (!barcodeAiSuggestion) return;
+
+    form.setBrand(barcodeAiSuggestion.brand);
+    form.setName(barcodeAiSuggestion.name);
+    form.setPaoMonths(barcodeAiSuggestion.paoMonths);
+    if (barcodeAiSuggestion.category) {
+      form.setCategory(barcodeAiSuggestion.category);
+    }
+    form.setLookupSource('ai-barcode');
+    setBarcodeAiSuggestion(null);
+    setLookupError('');
+  };
+
   return (
     <>
       <Modal onClose={onClose}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 pt-1">
-          <Input
-            aria-label="Бренд"
-            placeholder="Бренд"
-            value={form.brand}
-            onChange={(e) => {
-              form.setBrand(e.target.value);
-              if (form.smartError) form.setSmartError('');
-            }}
-          />
-          <SuggestionList
-            suggestions={brandSuggestions}
-            onPick={(suggestion) => form.setBrand(suggestion.name)}
-          />
+          <div className="relative">
+            <Input
+              aria-label="Бренд"
+              aria-autocomplete="list"
+              aria-expanded={brandFocused && brandSuggestions.length > 0}
+              placeholder="Бренд"
+              value={form.brand}
+              onFocus={() => setBrandFocused(true)}
+              onBlur={() => setTimeout(() => setBrandFocused(false), 120)}
+              onChange={(e) => {
+                form.setBrand(e.target.value);
+                if (form.smartError) form.setSmartError('');
+              }}
+              onKeyDown={handleBrandKeyDown}
+            />
+            {brandFocused && (
+              <SuggestionDropdown
+                suggestions={brandSuggestions}
+                mode="brand"
+                highlightIndex={brandHighlight}
+                onHighlight={setBrandHighlight}
+                onPick={handleBrandPick}
+              />
+            )}
+          </div>
 
-          <Input
-            required
-            aria-label="Название продукта"
-            placeholder="Название продукта"
-            value={form.name}
-            onChange={(e) => {
-              form.setName(e.target.value);
-              if (form.smartError) form.setSmartError('');
-            }}
-          />
-          <SuggestionList
-            suggestions={productSuggestions}
-            onPick={applyProductSuggestion}
-          />
-
-          <div className="rounded-[14px] border border-border/70 bg-bg p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-accent shadow-[var(--shadow-card)]">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold leading-tight text-text">
-                  Умное заполнение
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-muted">
-                  Исправит опечатки и дополнит поля на основе введённых данных.
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="secondary"
-                className="h-10 shrink-0 rounded-full px-4 text-sm shadow-none"
+          <div className="relative">
+            <div className="flex items-stretch gap-2">
+              <Input
+                required
+                aria-label="Название продукта"
+                aria-autocomplete="list"
+                aria-expanded={productFocused && productSuggestions.length > 0}
+                placeholder="Название продукта"
+                value={form.name}
+                className="min-w-0 flex-1"
+                onFocus={() => setProductFocused(true)}
+                onBlur={() => setTimeout(() => setProductFocused(false), 120)}
+                onChange={(e) => {
+                  form.setName(e.target.value);
+                  if (form.smartError) form.setSmartError('');
+                }}
+                onKeyDown={handleProductKeyDown}
+              />
+              <SmartFillButton
                 onClick={form.handleSmartFill}
-                disabled={!form.canSmartFill || form.isSmartLoading}
-              >
-                {form.isSmartLoading ? '...' : 'Заполнить'}
-              </Button>
+                disabled={!form.canSmartFill}
+                loading={form.isSmartLoading}
+              />
             </div>
+            {productFocused && (
+              <SuggestionDropdown
+                suggestions={productSuggestions}
+                mode="product"
+                highlightIndex={productHighlight}
+                onHighlight={setProductHighlight}
+                onPick={applyProductSuggestion}
+              />
+            )}
             {form.smartError && (
-              <p className="mt-2 text-sm text-expired">{form.smartError}</p>
+              <p className="mt-2 text-xs text-expired">{form.smartError}</p>
             )}
           </div>
 
@@ -279,7 +359,11 @@ export function AddProductModal({
               aria-label="Штрих-код"
               placeholder="Штрих-код"
               value={form.barcode}
-              onChange={(e) => form.setBarcode(e.target.value)}
+              onChange={(e) => {
+                form.setBarcode(e.target.value);
+                setBarcodeAiSuggestion(null);
+                setLookupError('');
+              }}
               className="min-w-0 flex-1"
             />
             <Button
@@ -287,28 +371,65 @@ export function AddProductModal({
               variant="secondary"
               onClick={() => setIsScannerOpen(true)}
               aria-label="Сканировать штрих-код"
-              disabled={isLookupLoading}
+              disabled={isLookupLoading || isBarcodeAiLoading}
               className="h-12 w-12 shrink-0 rounded-[14px] p-0 shadow-none"
             >
               <Camera className="h-5 w-5" />
             </Button>
           </div>
-          {(isLookupLoading || lookupError) && (
+          {(isLookupLoading || isBarcodeAiLoading || lookupError) && (
             <p
               className={`-mt-2 text-xs ${
                 lookupError ? 'text-muted' : 'text-accent'
               }`}
             >
-              {isLookupLoading ? 'Ищем продукт по штрих-коду...' : lookupError}
+              {isLookupLoading
+                ? 'Ищем продукт по штрих-коду...'
+                : isBarcodeAiLoading
+                  ? 'Пробуем угадать продукт через ИИ...'
+                  : lookupError}
             </p>
           )}
 
-          <Input
-            aria-label="Ссылка на фото"
-            placeholder="Ссылка на фото (необязательно)"
-            value={form.imageUrl}
-            onChange={(e) => form.setImageUrl(e.target.value)}
-          />
+          {barcodeAiSuggestion && (
+            <div className="rounded-[14px] border border-accent/25 bg-accent/5 p-4">
+              <p className="text-sm text-muted">Возможно, это:</p>
+              <p className="mt-1 text-base font-semibold text-text">
+                {barcodeAiSuggestion.brand} · {barcodeAiSuggestion.name}
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                Срок после вскрытия: {barcodeAiSuggestion.paoMonths} мес.
+              </p>
+              <div className="mt-3 flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  className="rounded-full"
+                  onClick={applyBarcodeAiSuggestion}
+                >
+                  Да, заполнить
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="rounded-full shadow-none"
+                  onClick={() => setBarcodeAiSuggestion(null)}
+                >
+                  Нет, вручную
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <FieldLabel>Фото</FieldLabel>
+            <ProductPhotoPicker
+              value={form.imageUrl}
+              onChange={form.setImageUrl}
+              userId={user?.id}
+            />
+          </div>
 
           <div>
             <FieldLabel>Дата вскрытия</FieldLabel>

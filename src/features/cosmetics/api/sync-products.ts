@@ -31,7 +31,10 @@ function toRow(item: CosmeticItem, userId: string): ProductRow {
     opened_at: item.openedAt,
     pao_months: item.paoMonths,
     barcode: item.barcode ?? null,
-    image_url: item.imageUrl ?? null,
+    image_url:
+      item.imageUrl && !item.imageUrl.startsWith('data:')
+        ? item.imageUrl
+        : null,
     notes: item.notes ?? null,
     source: item.lookupSource ?? 'manual',
     created_at: item.createdAt,

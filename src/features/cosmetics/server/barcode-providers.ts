@@ -1,4 +1,5 @@
 import { inferCategoryFromText } from '../lib/categories';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 import type { LookupProductResponse } from '../types';
 
 type BarcodeProvider = {
@@ -67,6 +68,36 @@ function normalizeOpenBeautyFactsProduct(
   };
 }
 
+const catalogProvider: BarcodeProvider = {
+  id: 'catalog',
+  async lookup(barcode) {
+    const supabase = getSupabaseServerClient({ serviceRole: true });
+    if (!supabase) return { found: false, barcode };
+
+    const { data } = await supabase
+      .from('product_catalog')
+      .select('brand,name,barcode,default_pao_months,category,image_url')
+      .eq('barcode', barcode)
+      .limit(1)
+      .maybeSingle();
+
+    if (!data?.brand && !data?.name) {
+      return { found: false, barcode };
+    }
+
+    return {
+      found: true,
+      barcode: data.barcode ?? barcode,
+      brand: data.brand,
+      name: data.name,
+      paoMonths: data.default_pao_months ?? undefined,
+      category: data.category ?? inferCategoryFromText(`${data.brand} ${data.name}`),
+      imageUrl: data.image_url ?? undefined,
+      source: 'catalog',
+    };
+  },
+};
+
 const openBeautyFactsProvider: BarcodeProvider = {
   id: 'open-beauty-facts',
   async lookup(barcode) {
@@ -99,6 +130,7 @@ function disabledRegionalProvider(id: string): BarcodeProvider {
 }
 
 const providers: BarcodeProvider[] = [
+  catalogProvider,
   openBeautyFactsProvider,
   disabledRegionalProvider('ru-chestny-znak-or-commercial'),
   disabledRegionalProvider('kr-gs1-koreannet'),

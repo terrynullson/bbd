@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { analyzeProduct } from '../api/analyze-product';
 import { inferCategoryFromText } from '../lib/categories';
+import { isUnknownBrand } from '../lib/analyze-context';
 import type { AddProductInput, ProductCategory } from '../types';
 
 const DEFAULT_FORM = {
@@ -92,9 +93,16 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
         barcode: barcode.trim() || undefined,
       });
 
-      setBrand(result.brand);
+      if (!trimmedBrand || isUnknownBrand(trimmedBrand)) {
+        setBrand(result.brand);
+      }
+
       setName(result.name);
-      setPaoMonths(result.paoMonths);
+
+      if (paoMonths === DEFAULT_FORM.paoMonths) {
+        setPaoMonths(result.paoMonths);
+      }
+
       setCategory(
         result.category ??
           inferCategoryFromText(`${result.brand} ${result.name}`),
@@ -107,7 +115,7 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
     } finally {
       setIsSmartLoading(false);
     }
-  }, [name, brand, barcode]);
+  }, [name, brand, barcode, paoMonths]);
 
   return {
     name,
@@ -134,6 +142,6 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
     reset,
     buildInput,
     handleSmartFill,
-    canSmartFill: Boolean(name.trim() || brand.trim()),
+    canSmartFill: Boolean(name.trim() || brand.trim() || barcode.trim()),
   };
 }
