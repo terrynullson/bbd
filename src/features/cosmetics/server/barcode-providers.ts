@@ -64,6 +64,7 @@ function normalizeOpenBeautyFactsProduct(
     name,
     paoMonths: parsePaoMonths(product?.periods_after_opening),
     category: inferCategoryFromText(categoryText),
+    categoriesTags: product?.categories_tags,
     source: 'open-beauty-facts',
   };
 }

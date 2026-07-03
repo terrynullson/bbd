@@ -8,6 +8,7 @@ import {
   upsertCloudProducts,
 } from '../api/sync-products';
 import { calculateStatus } from '../lib/calculate-status';
+import { inferTaxonomy } from '../lib/taxonomy';
 import { deleteProductPhoto } from '../lib/product-photo-storage';
 import { readCosmetics, writeCosmetics } from '../lib/storage';
 import type { AddProductInput, CosmeticItem, UpdateProductInput } from '../types';
@@ -239,8 +240,15 @@ export function useCosmetics() {
       return;
     }
 
+    const taxonomy = inferTaxonomy(
+      input.category,
+      `${input.brand} ${input.name}`,
+    );
+
     const item: CosmeticItem = {
       ...input,
+      productGroup: input.productGroup ?? taxonomy.group,
+      productSubtype: input.productSubtype ?? taxonomy.subtype,
       id: crypto.randomUUID(),
       status: calculateStatus(input.openedAt, input.paoMonths, input.isSealed),
       createdAt: now,
@@ -270,6 +278,14 @@ export function useCosmetics() {
               ...item,
               ...input,
               imageUrl: nextImageUrl,
+              productGroup:
+                input.productGroup ??
+                inferTaxonomy(input.category, `${input.brand} ${input.name}`)
+                  .group,
+              productSubtype:
+                input.productSubtype ??
+                inferTaxonomy(input.category, `${input.brand} ${input.name}`)
+                  .subtype,
               status: calculateStatus(input.openedAt, input.paoMonths, input.isSealed),
               updatedAt: new Date().toISOString(),
               deletedAt: undefined,

@@ -11,37 +11,37 @@ export function PackagingToggle({ isOpen, onChange }: PackagingToggleProps) {
     haptic('light');
     onChange(next);
   };
+
   return (
     <div>
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
-        Упаковка
-      </p>
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-medium text-text">
+          {isOpen ? 'Открыт' : 'Не открыт'}
+        </p>
         <button
           type="button"
-          onClick={() => handleChange(false)}
+          role="switch"
+          aria-checked={isOpen}
+          aria-label={isOpen ? 'Открыт' : 'Не открыт'}
+          onClick={() => handleChange(!isOpen)}
           className={cn(
-            'touch-target flex h-12 w-full items-center justify-center rounded-full border text-sm font-semibold transition-colors',
-            !isOpen
-              ? 'border-accent bg-accent/10 text-accent'
-              : 'border-border bg-surface text-muted active:bg-bg',
+            'relative h-7 w-12 shrink-0 rounded-full transition-colors',
+            isOpen ? 'bg-accent' : 'bg-border',
           )}
         >
-          Закрыто
-        </button>
-        <button
-          type="button"
-          onClick={() => handleChange(true)}
-          className={cn(
-            'touch-target flex h-12 w-full items-center justify-center rounded-full border text-sm font-semibold transition-colors',
-            isOpen
-              ? 'border-accent bg-accent/10 text-accent'
-              : 'border-border bg-surface text-muted active:bg-bg',
-          )}
-        >
-          Вскрыто
+          <span
+            className={cn(
+              'absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform',
+              isOpen ? 'translate-x-[22px]' : 'translate-x-0.5',
+            )}
+          />
         </button>
       </div>
+      {!isOpen && (
+        <p className="mt-2 text-xs text-muted">
+          Срок после вскрытия не идёт. Укажите «Годен до», если есть.
+        </p>
+      )}
     </div>
   );
 }

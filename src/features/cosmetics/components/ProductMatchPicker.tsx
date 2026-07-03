@@ -65,6 +65,9 @@ export function ProductMatchPicker({
           <p className="mt-1 text-xs text-muted">
             Срок после вскрытия: {aiResult.paoMonths} мес.
           </p>
+          <p className="mt-2 text-xs text-muted">
+            Примерный срок. Ориентируйтесь на упаковку.
+          </p>
           <button
             type="button"
             onClick={onConfirmAi}
@@ -72,7 +75,7 @@ export function ProductMatchPicker({
               'mt-3 w-full rounded-[14px] bg-accent px-4 py-3 text-sm font-medium text-accent-foreground shadow-[var(--shadow-button)] transition-colors hover:bg-accent-hover',
             )}
           >
-            Да, добавить
+            Открыть форму
           </button>
         </div>
       )}

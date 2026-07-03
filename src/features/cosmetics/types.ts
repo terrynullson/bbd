@@ -1,5 +1,35 @@
 export type CosmeticStatus = 'fresh' | 'expiring' | 'expired';
 
+export type BarcodeSource = 'scan' | 'manual';
+export type BarcodeTrust = 'verified' | 'unverified' | 'suspicious';
+
+export type PaoSource = 'user' | 'catalog' | 'preset' | 'ai_estimate';
+
+export type ProductGroup =
+  | 'skincare'
+  | 'makeup'
+  | 'hair'
+  | 'body'
+  | 'fragrance'
+  | 'nails'
+  | 'other';
+
+export type ProductSubtype =
+  | 'day_cream'
+  | 'night_cream'
+  | 'serum'
+  | 'toner'
+  | 'cleanser'
+  | 'mask'
+  | 'lipstick'
+  | 'foundation'
+  | 'shampoo'
+  | 'conditioner'
+  | 'body_lotion'
+  | 'perfume'
+  | 'nail_polish'
+  | 'other';
+
 export type ProductCategory =
   | 'cream'
   | 'serum'
@@ -13,6 +43,11 @@ export interface CosmeticItem {
   name: string;
   brand: string;
   barcode?: string;
+  barcodeSource?: BarcodeSource;
+  barcodeTrust?: BarcodeTrust;
+  paoSource?: PaoSource;
+  productGroup?: ProductGroup;
+  productSubtype?: ProductSubtype;
   paoMonths: number;
   openedAt: string;
   isSealed?: boolean;
@@ -36,6 +71,11 @@ export interface AddProductInput {
   name: string;
   brand: string;
   barcode?: string;
+  barcodeSource?: BarcodeSource;
+  barcodeTrust?: BarcodeTrust;
+  paoSource?: PaoSource;
+  productGroup?: ProductGroup;
+  productSubtype?: ProductSubtype;
   paoMonths: number;
   openedAt: string;
   isSealed?: boolean;
@@ -73,6 +113,7 @@ export interface LookupProductResponse {
   paoMonths?: number;
   category?: ProductCategory;
   imageUrl?: string;
+  categoriesTags?: string[];
   source?: 'open-beauty-facts' | 'catalog';
 }
 

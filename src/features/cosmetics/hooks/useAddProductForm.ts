@@ -16,7 +16,7 @@ const DEFAULT_FORM = {
   imageUrl: '',
   notes: '',
   lookupSource: 'manual' as AddProductInput['lookupSource'],
-  isSealed: false,
+  isSealed: true,
 };
 
 function toDateInputValue(value?: string) {

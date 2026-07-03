@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { normalizeSearchText, isUsefulCatalogValue } from '@/features/cosmetics/lib/normalize';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
-import type { ProductCategory } from '@/features/cosmetics/types';
+import type { BarcodeSource, BarcodeTrust, ProductCategory } from '@/features/cosmetics/types';
 
 type CatalogPayload = {
   brand?: string;
@@ -11,6 +11,8 @@ type CatalogPayload = {
   paoMonths?: number;
   imageUrl?: string;
   source?: string;
+  barcodeTrust?: BarcodeTrust;
+  barcodeSource?: BarcodeSource;
 };
 
 type ExistingProduct = {
@@ -49,6 +51,14 @@ async function upsertBrand(name: string, source: string) {
   });
 }
 
+function resolveConfidence(source: string, barcodeTrust?: BarcodeTrust) {
+  if (barcodeTrust === 'suspicious') return 0.2;
+  if (barcodeTrust === 'unverified') return 0.45;
+  if (source === 'open-beauty-facts') return 0.9;
+  if (source === 'catalog') return 0.85;
+  return 0.65;
+}
+
 export async function POST(request: NextRequest) {
   const supabase = getSupabaseServerClient({ serviceRole: true });
   if (!supabase) {
@@ -66,7 +76,11 @@ export async function POST(request: NextRequest) {
   const source = body.source ?? 'manual';
   const normalizedBrand = normalizeSearchText(brand);
   const normalizedName = normalizeSearchText(name);
-  const barcode = body.barcode?.trim() || null;
+  const barcodeTrust = body.barcodeTrust;
+  const barcode =
+    body.barcode?.trim() && barcodeTrust !== 'suspicious'
+      ? body.barcode.trim()
+      : null;
   const now = new Date().toISOString();
 
   await upsertBrand(brand, source);
@@ -95,7 +109,9 @@ export async function POST(request: NextRequest) {
     default_pao_months: body.paoMonths,
     image_url: body.imageUrl ?? null,
     source,
-    confidence: source === 'open-beauty-facts' ? 0.9 : 0.65,
+    barcode_trust: barcodeTrust ?? null,
+    barcode_source: body.barcodeSource ?? null,
+    confidence: resolveConfidence(source, barcodeTrust),
     updated_at: now,
     last_seen_at: now,
   };

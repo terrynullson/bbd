@@ -13,6 +13,8 @@ type ProductRow = {
   pao_months: number;
   is_sealed: boolean;
   barcode: string | null;
+  barcode_source: string | null;
+  barcode_trust: string | null;
   image_url: string | null;
   notes: string | null;
   source: CosmeticItem['lookupSource'] | null;
@@ -33,6 +35,8 @@ function toRow(item: CosmeticItem, userId: string): ProductRow {
     pao_months: item.paoMonths,
     is_sealed: item.isSealed ?? false,
     barcode: item.barcode ?? null,
+    barcode_source: item.barcodeSource ?? null,
+    barcode_trust: item.barcodeTrust ?? null,
     image_url:
       item.imageUrl && !item.imageUrl.startsWith('data:')
         ? item.imageUrl
@@ -56,6 +60,8 @@ function fromRow(row: ProductRow): CosmeticItem {
     paoMonths: row.pao_months,
     isSealed: row.is_sealed ?? false,
     barcode: row.barcode ?? undefined,
+    barcodeSource: (row.barcode_source as CosmeticItem['barcodeSource']) ?? undefined,
+    barcodeTrust: (row.barcode_trust as CosmeticItem['barcodeTrust']) ?? undefined,
     imageUrl: row.image_url ?? undefined,
     notes: row.notes ?? undefined,
     lookupSource: row.source ?? 'manual',

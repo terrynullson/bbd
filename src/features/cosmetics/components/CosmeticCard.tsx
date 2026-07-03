@@ -6,7 +6,7 @@ import {
   getDaysRemaining,
   getPaoProgress,
 } from '../lib/calculate-status';
-import { getCategoryLabel } from '../lib/categories';
+import { getSubtypeLabel } from '../lib/taxonomy';
 import { ProductIllustration } from './ProductIllustration';
 import type { CosmeticItem } from '../types';
 
@@ -47,16 +47,21 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
-                {getCategoryLabel(item.category)}
+                {getSubtypeLabel(item)}
               </p>
               <h3 className="mt-0.5 font-display text-[1.05rem] font-semibold leading-snug text-text">
                 {item.name}
               </h3>
               <p className="mt-0.5 truncate text-xs text-muted">{item.brand}</p>
+              {item.barcodeTrust === 'suspicious' && (
+                <p className="mt-0.5 text-[10px] text-muted">
+                  Штрих-код не проверен
+                </p>
+              )}
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
               <Badge variant={item.status} solid>
-                {isSealed ? 'Закрыто' : STATUS_LABELS[item.status]}
+                {isSealed ? 'Не открыт' : STATUS_LABELS[item.status]}
               </Badge>
               <button
                 type="button"
@@ -75,7 +80,7 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
         <div className="flex items-center justify-between gap-3 text-[12px] text-muted">
           <span className="shrink-0">
             {isSealed
-              ? 'Не вскрыт'
+              ? 'Не открыт'
               : item.status === 'expired'
                 ? 'Срок истёк'
                 : `${daysRemaining} дн. осталось`}
