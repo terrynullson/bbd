@@ -20,12 +20,14 @@ export function PageHero({ summary }: PageHeroProps) {
           <ThemeToggle variant="hero" />
         </div>
 
-        <h1 className="font-display mt-4 text-[2.25rem] font-semibold leading-none tracking-tight text-white sm:text-[2.5rem]">
+        <h1 className="mt-4 font-display text-[2.35rem] font-semibold leading-none tracking-tight text-white drop-shadow-sm sm:text-[2.6rem]">
           BBD
         </h1>
 
         {summary && (
-          <p className="mt-2 text-[13px] leading-relaxed text-white/85">{summary}</p>
+          <p className="mt-2 max-w-[20rem] text-[13px] leading-relaxed text-white/85">
+            {summary}
+          </p>
         )}
       </div>
     </header>

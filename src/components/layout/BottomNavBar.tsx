@@ -39,7 +39,7 @@ export function BottomNavBar({
   return (
     <nav
       className={cn(
-        'safe-bottom nav-bar fixed inset-x-0 bottom-0 z-20 border-t border-border/50 bg-surface/90 backdrop-blur-xl transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
+        'safe-bottom nav-bar fixed inset-x-0 bottom-0 z-20 border-t border-border/40 bg-surface/85 shadow-[0_-14px_34px_rgba(44,36,32,0.08)] backdrop-blur-2xl transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,0.8,0.2,1)] dark:shadow-[0_-14px_34px_rgba(0,0,0,0.28)]',
         isHidden
           ? 'pointer-events-none translate-y-full opacity-0'
           : 'translate-y-0 opacity-100',
@@ -54,10 +54,10 @@ export function BottomNavBar({
           aria-label="Полка"
           aria-current={activeTab === 'shelf' ? 'page' : undefined}
           className={cn(
-            'nav-icon touch-target flex h-12 w-12 items-center justify-center rounded-button transition-colors',
+            'nav-icon touch-target flex h-12 w-12 items-center justify-center rounded-[18px] transition-all',
             activeTab === 'shelf'
-              ? 'text-accent'
-              : 'text-muted hover:text-text',
+              ? 'bg-accent/10 text-accent shadow-sm'
+              : 'text-muted hover:bg-bg/70 hover:text-text',
           )}
         >
           <NavIcon name="shelf" />
@@ -68,7 +68,7 @@ export function BottomNavBar({
             type="button"
             onClick={handleAdd}
             aria-label="Добавить продукт"
-            className="fab-button pointer-events-auto -mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-[var(--shadow-button)] transition-all hover:bg-accent-hover active:scale-[0.94]"
+            className="fab-button pointer-events-auto -mt-7 flex h-14 w-14 items-center justify-center rounded-[22px] bg-accent text-accent-foreground shadow-[var(--shadow-button)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-hover active:scale-[0.94]"
           >
             <NavIcon name="add" />
           </button>
@@ -80,10 +80,10 @@ export function BottomNavBar({
           aria-label={isSignedIn ? 'Профиль' : 'Войти'}
           aria-current={activeTab === 'account' ? 'page' : undefined}
           className={cn(
-            'nav-icon touch-target flex h-12 w-12 items-center justify-center rounded-button transition-colors',
+            'nav-icon touch-target flex h-12 w-12 items-center justify-center rounded-[18px] transition-all',
             activeTab === 'account'
-              ? 'text-accent'
-              : 'text-muted hover:text-text',
+              ? 'bg-accent/10 text-accent shadow-sm'
+              : 'text-muted hover:bg-bg/70 hover:text-text',
           )}
         >
           {isSignedIn ? (

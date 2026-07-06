@@ -165,14 +165,14 @@ export function CosmeticsPage() {
 
       <main
         ref={mainRef}
-        className="content-enter relative z-10 -mt-6 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-none rounded-t-[var(--radius-sheet)] bg-surface px-4 pt-6 shadow-[0_-8px_32px_rgba(44,36,32,0.06)] pb-[calc(5.5rem+var(--safe-bottom))]"
+        className="content-enter relative z-10 -mt-7 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-none rounded-t-[var(--radius-sheet)] border-t border-white/40 bg-surface px-4 pt-5 shadow-[0_-14px_44px_rgba(44,36,32,0.08)] pb-[calc(5.75rem+var(--safe-bottom))] dark:border-white/5"
       >
         {items.length === 0 ? (
           <EmptyState />
         ) : (
           <>
             <ShelfTip />
-            <div className="flex flex-col gap-4">
+            <div className="mt-4 flex flex-col gap-5">
               <ShelfFilters value={shelfFilter} onChange={setShelfFilter} />
               {filteredItems.length > 0 ? (
                 <CosmeticsDashboard
@@ -181,7 +181,7 @@ export function CosmeticsPage() {
                   onEdit={openEditModal}
                 />
               ) : (
-                <p className="rounded-[18px] border border-border/70 bg-bg px-4 py-8 text-center text-sm text-muted">
+                <p className="rounded-card border border-border/70 bg-bg/80 px-4 py-9 text-center text-sm text-muted shadow-[var(--shadow-card)]">
                   Нет продуктов по этому фильтру
                 </p>
               )}

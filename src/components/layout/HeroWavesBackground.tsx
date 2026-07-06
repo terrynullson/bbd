@@ -101,7 +101,7 @@ export function HeroWavesBackground() {
         </g>
       </svg>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/25 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/28 via-black/10 to-transparent" />
     </div>
   );
 }
