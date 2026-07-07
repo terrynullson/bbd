@@ -34,7 +34,7 @@ export function ThemeToggle({ className, variant = 'default' }: ThemeToggleProps
         className={cn(
           'flex h-7 w-7 items-center justify-center rounded-[8px] transition-colors',
           isDark
-            ? 'bg-white/90 text-[#3f3029] shadow-sm'
+            ? 'bg-white/90 text-[#3f3029]'
             : 'text-white/90',
           variant !== 'hero' && !isDark && 'text-muted',
         )}
@@ -45,7 +45,7 @@ export function ThemeToggle({ className, variant = 'default' }: ThemeToggleProps
         className={cn(
           'flex h-7 w-7 items-center justify-center rounded-[8px] transition-colors',
           !isDark
-            ? 'bg-white/90 text-[#3f3029] shadow-sm'
+            ? 'bg-white/90 text-[#3f3029]'
             : 'text-white/90',
           variant !== 'hero' && isDark && 'text-muted',
         )}

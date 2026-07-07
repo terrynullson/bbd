@@ -2,6 +2,8 @@
 
 import { Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
+import { useDesignStyle } from '@/components/theme/style-provider';
+import { cn } from '@/lib/utils';
 import {
   getDaysRemaining,
   getLimitingLabel,
@@ -26,6 +28,7 @@ const STATUS_LABELS = {
 } as const;
 
 export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
+  const { designStyle } = useDesignStyle();
   const params = expiryParamsFromItem(item);
   const isSealed = item.isSealed ?? false;
   const daysRemaining = getDaysRemaining(params);
@@ -45,9 +48,18 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
   })();
 
   return (
-    <article className="motion-safe-transition rounded-card border border-border/70 bg-bg/90 p-4 shadow-[var(--shadow-card)] transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/20 hover:shadow-[var(--shadow-card-hover)] active:scale-[0.995]">
+    <article
+      className={cn(
+        'motion-safe-transition p-4 transition-all duration-300 active:scale-[0.995]',
+        designStyle === 'pulse'
+          ? 'pulse-card hover:border-accent/35'
+          : designStyle === 'riot'
+            ? 'riot-card'
+            : 'rounded-card border border-border/60 bg-bg hover:border-accent/25',
+      )}
+    >
       <div className="flex gap-3.5">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[18px] bg-icon-bg text-accent ring-1 ring-white/60 dark:ring-white/5">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[18px] bg-icon-bg text-accent ring-1 ring-border/50">
           {item.imageUrl ? (
             <div
               className="h-full w-full bg-cover bg-center"
@@ -117,7 +129,7 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
           <p className="text-[11px] text-muted">{limitingLabel}</p>
         )}
 
-        <div className="h-2 overflow-hidden rounded-full bg-surface/85 shadow-[inset_0_1px_2px_rgba(44,36,32,0.08)]">
+        <div className="h-2 overflow-hidden rounded-full bg-surface/85">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
               item.status === 'fresh'

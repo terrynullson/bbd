@@ -2,6 +2,7 @@ export const STORAGE_KEY = 'gde-moy-krem-data';
 export const STORAGE_SCHEMA_VERSION = 3;
 export const SHELF_TIP_DISMISS_KEY = 'bbd-shelf-tip-dismissed';
 export const THEME_STORAGE_KEY = 'gde-moy-krem-theme';
+export const STYLE_STORAGE_KEY = 'bbd-design-style';
 export const INSTALL_DISMISS_KEY = 'gde-moy-krem-install-dismissed';
 
 export const PAO_OPTIONS = [3, 6, 12, 24] as const;

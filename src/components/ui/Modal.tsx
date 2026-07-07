@@ -159,7 +159,7 @@ export function Modal({ title, children, onClose, className }: ModalProps) {
       <div
         ref={panelRef}
         className={cn(
-          'sheet-panel flex max-h-[min(92dvh,780px)] w-full max-w-lg flex-col rounded-t-[28px] bg-surface shadow-[var(--shadow-modal)] will-change-transform',
+          'sheet-panel flex max-h-[min(92dvh,780px)] w-full max-w-lg flex-col rounded-t-[28px] bg-surface will-change-transform',
           isDragging && 'select-none',
           className,
         )}

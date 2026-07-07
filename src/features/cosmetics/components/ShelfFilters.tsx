@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { useDesignStyle } from '@/components/theme/style-provider';
 import type { ShelfFilter } from '../lib/shelf-filters';
 
 type ShelfFiltersProps = {
@@ -14,6 +15,14 @@ const FILTERS: Array<{ id: ShelfFilter; label: string }> = [
 ];
 
 export function ShelfFilters({ value, onChange }: ShelfFiltersProps) {
+  const { designStyle } = useDesignStyle();
+  const chipShape =
+    designStyle === 'pulse'
+      ? 'rounded-[10px]'
+      : designStyle === 'riot'
+        ? 'rounded-none border-2 font-bold uppercase tracking-wider text-xs'
+        : 'rounded-full';
+
   return (
     <div
       className="-mx-4 overflow-x-auto px-4 py-1"
@@ -30,10 +39,11 @@ export function ShelfFilters({ value, onChange }: ShelfFiltersProps) {
               type="button"
               onClick={() => onChange(filter.id)}
               className={cn(
-                'motion-safe-transition rounded-full border px-4 py-2.5 text-sm font-medium shadow-sm transition-all duration-300 active:scale-[0.98]',
+                'motion-safe-transition border px-4 py-2.5 text-sm font-medium transition-all duration-300 active:scale-[0.98]',
+                chipShape,
                 isActive
-                  ? 'border-accent/40 bg-accent/10 text-accent shadow-[0_8px_20px_rgba(193,125,101,0.12)]'
-                  : 'border-border/60 bg-bg/75 text-muted hover:border-accent/30 hover:bg-bg hover:text-text',
+                  ? 'border-accent/35 bg-accent/12 text-accent'
+                  : 'border-border/50 bg-bg text-muted hover:border-accent/25 hover:text-text',
               )}
             >
               {filter.label}

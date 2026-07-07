@@ -2,9 +2,12 @@
 
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useDesignStyle } from '@/components/theme/style-provider';
+import { cn } from '@/lib/utils';
 import { SHELF_TIP_DISMISS_KEY } from '@/lib/constants';
 
 export function ShelfTip() {
+  const { designStyle } = useDesignStyle();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -20,7 +23,14 @@ export function ShelfTip() {
   };
 
   return (
-    <div className="mb-3 rounded-[14px] border border-accent/20 bg-accent/5 px-4 py-3">
+    <div
+      className={cn(
+        'mb-3 px-4 py-3',
+        designStyle === 'riot'
+          ? 'riot-sticker'
+          : 'rounded-[14px] border border-accent/18 bg-accent/8',
+      )}
+    >
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs leading-relaxed text-muted">
           BBD удобнее всего для средств, которыми вы уже пользуетесь. Запас

@@ -14,7 +14,8 @@ import { InstallPrompt } from './InstallPrompt';
 import { applyShelfFilter, type ShelfFilter } from '../lib/shelf-filters';
 import { summarizeStatuses } from '../lib/sort-items';
 import { useCosmetics } from '../hooks/useCosmetics';
-import { APP_VERSION } from '@/lib/constants';
+import { useDesignStyle } from '@/components/theme/style-provider';
+import { cn } from '@/lib/utils';
 import { haptic } from '@/lib/haptics';
 import type { AddProductInput, CosmeticItem } from '../types';
 
@@ -127,26 +128,14 @@ export function CosmeticsPage() {
       ? `${summary.fresh} свежих · ${summary.expiring} истекают · ${summary.expired} просрочено`
       : null;
 
+  const { designStyle } = useDesignStyle();
+  const isWarmStyle = designStyle === 'warm';
+
   const toastPosition = isSheetOpen
     ? 'bottom-[calc(1rem+var(--safe-bottom))]'
-    : 'bottom-[calc(6.25rem+var(--safe-bottom))]';
-
-  const storageStatus = !isOnline
-    ? 'Офлайн · изменения сохраняются на устройстве'
-    : error
-      ? error
-      : syncStatus === 'syncing'
-        ? 'Синхронизируем с облаком...'
-        : syncError
-          ? syncError
-          : syncStatus === 'synced' && isSignedIn
-            ? 'Синхронизировано с облаком'
-            : isSaving
-              ? 'Сохраняем...'
-              : lastSavedAt
-                ? 'Сохранено на устройстве'
-                : 'Локальное хранение готово';
-  const showSyncRetry = Boolean(syncError && isOnline && isSignedIn);
+    : isWarmStyle
+      ? 'bottom-[calc(6.25rem+var(--safe-bottom))]'
+      : 'bottom-[calc(4.5rem+var(--safe-bottom))]';
 
   const handleShelfPress = () => {
     setActiveTab('shelf');
@@ -160,12 +149,25 @@ export function CosmeticsPage() {
   };
 
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-lg flex-col bg-bg">
-      <PageHero summary={summaryLine} />
+    <div
+      className={cn(
+        'mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden',
+        isWarmStyle ? 'bg-[var(--hero-overscroll)]' : 'bg-bg',
+      )}
+    >
+      <PageHero summary={summaryLine} compact={items.length === 0} />
 
       <main
         ref={mainRef}
-        className="content-enter relative z-10 -mt-7 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-none rounded-t-[var(--radius-sheet)] border-t border-white/40 bg-surface px-4 pt-5 shadow-[0_-14px_44px_rgba(44,36,32,0.08)] pb-[calc(5.75rem+var(--safe-bottom))] dark:border-white/5"
+        className={cn(
+          'content-enter relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-none px-4',
+          designStyle === 'warm' &&
+            'shelf-sheet z-10 -mt-12 rounded-t-[var(--radius-sheet)] bg-surface pb-[calc(5.25rem+var(--safe-bottom))] pt-5',
+          designStyle === 'pulse' &&
+            'z-10 bg-bg pb-[calc(4.75rem+var(--safe-bottom))] pt-4',
+          designStyle === 'riot' &&
+            'riot-shelf z-10 bg-bg pb-[calc(4.5rem+var(--safe-bottom))] pt-3',
+        )}
       >
         {items.length === 0 ? (
           <EmptyState />
@@ -181,37 +183,13 @@ export function CosmeticsPage() {
                   onEdit={openEditModal}
                 />
               ) : (
-                <p className="rounded-card border border-border/70 bg-bg/80 px-4 py-9 text-center text-sm text-muted shadow-[var(--shadow-card)]">
+                <p className="rounded-card border border-border/70 bg-bg/80 px-4 py-9 text-center text-sm text-muted">
                   Нет продуктов по этому фильтру
                 </p>
               )}
             </div>
           </>
         )}
-
-        <p
-          className={`mt-6 text-center text-xs ${
-            error || syncError ? 'text-expired' : 'text-muted/70'
-          }`}
-        >
-          {storageStatus}
-          {showSyncRetry && (
-            <>
-              {' · '}
-              <button
-                type="button"
-                onClick={retrySync}
-                className="font-semibold text-text underline underline-offset-2"
-              >
-                Повторить
-              </button>
-            </>
-          )}
-        </p>
-
-        <p className="mt-2 pb-2 text-center text-[10px] uppercase tracking-[0.2em] text-muted/60">
-          v{APP_VERSION}
-        </p>
       </main>
 
       <BottomNavBar
@@ -242,6 +220,14 @@ export function CosmeticsPage() {
             setIsProfileOpen(false);
             setActiveTab('shelf');
           }}
+          isOnline={isOnline}
+          error={error}
+          syncStatus={syncStatus}
+          syncError={syncError}
+          isSaving={isSaving}
+          lastSavedAt={lastSavedAt}
+          isSignedIn={isSignedIn}
+          onRetrySync={retrySync}
         />
       )}
 
@@ -274,7 +260,7 @@ export function CosmeticsPage() {
 
       {deletedItem && (
         <div className={`toast-enter fixed inset-x-0 z-40 px-4 ${toastPosition}`}>
-          <div className="mx-auto flex max-w-lg items-center justify-between gap-3 rounded-[16px] bg-[#2c2420] px-4 py-3 text-sm text-white shadow-[var(--shadow-modal)]">
+          <div className="mx-auto flex max-w-lg items-center justify-between gap-3 rounded-[16px] bg-[#2c2420] px-4 py-3 text-sm text-white">
             <span className="min-w-0 truncate">
               «{deletedItem.name}» удалён
             </span>

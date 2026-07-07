@@ -72,7 +72,7 @@ export function ProductMatchPicker({
             type="button"
             onClick={onConfirmAi}
             className={cn(
-              'mt-3 w-full rounded-[14px] bg-accent px-4 py-3 text-sm font-medium text-accent-foreground shadow-[var(--shadow-button)] transition-colors hover:bg-accent-hover',
+              'mt-3 w-full rounded-[14px] bg-accent px-4 py-3 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover',
             )}
           >
             Открыть форму

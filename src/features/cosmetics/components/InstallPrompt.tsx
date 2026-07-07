@@ -36,7 +36,7 @@ export function InstallPrompt() {
 
   return (
     <div className="fixed inset-x-0 top-3 z-30 px-4 pt-[env(safe-area-inset-top)]">
-      <div className="mx-auto flex max-w-lg items-center gap-3 rounded-[14px] border border-border bg-surface/95 px-3 py-2.5 shadow-[var(--shadow-card)] backdrop-blur-md">
+      <div className="mx-auto flex max-w-lg items-center gap-3 rounded-[14px] border border-border bg-surface/95 px-3 py-2.5 backdrop-blur-md">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent">
           <Share className="h-4 w-4" />
         </div>

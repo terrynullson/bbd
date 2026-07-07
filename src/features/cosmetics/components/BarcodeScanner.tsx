@@ -214,7 +214,7 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
       onClick={() => void handleClose()}
     >
       <div
-        className="relative flex min-h-[390px] w-full max-w-sm items-center justify-center overflow-hidden rounded-[28px] bg-black p-5 shadow-[var(--shadow-modal)]"
+        className="relative flex min-h-[390px] w-full max-w-sm items-center justify-center overflow-hidden rounded-[28px] bg-black p-5"
         style={{
           backgroundImage:
             "linear-gradient(rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.72)), url('/images/hero-bg.svg')",
@@ -254,7 +254,7 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
         </div>
 
         {phase === 'permission' && (
-          <div className="relative z-10 w-full max-w-[210px] rounded-[18px] bg-surface px-5 py-6 text-center shadow-[var(--shadow-modal)]">
+          <div className="relative z-10 w-full max-w-[210px] rounded-[18px] bg-surface px-5 py-6 text-center">
             <Camera className="mx-auto h-12 w-12 fill-current text-[#332720]" />
             <div className="mt-4">
               <p className="text-lg font-medium text-text">
@@ -275,7 +275,7 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
         )}
 
         {phase === 'error' && error && (
-          <div className="relative z-10 w-full max-w-[240px] space-y-4 rounded-[18px] bg-surface p-5 text-center shadow-[var(--shadow-modal)]">
+          <div className="relative z-10 w-full max-w-[240px] space-y-4 rounded-[18px] bg-surface p-5 text-center">
             <Camera className="mx-auto h-10 w-10 text-expired" />
             <p className="text-sm font-medium text-expired">{error}</p>
             <Button size="lg" className="w-full" onClick={() => void startScanner()}>

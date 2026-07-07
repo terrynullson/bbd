@@ -13,43 +13,39 @@
   --expiring: #c09c5a;
   --expired: #c46d62;
   --icon-bg: #f0ebe4;
-  --shadow-card:
-    0 10px 28px rgba(44, 36, 32, 0.08),
-    0 1px 0 rgba(255, 255, 255, 0.55) inset;
-  --shadow-card-hover:
-    0 16px 36px rgba(44, 36, 32, 0.11),
-    0 1px 0 rgba(255, 255, 255, 0.65) inset;
-  --shadow-button: 0 10px 24px rgba(193, 125, 101, 0.26);
-  --shadow-modal: 0 24px 48px rgba(44, 36, 32, 0.14);
-  --hero-overscroll: #6b5144;
-  --hero-pills: #81695b;
+  --shadow-card: none;
+  --shadow-card-hover: none;
+  --shadow-button: none;
+  --shadow-modal: none;
+  --hero-overscroll: #5a4538;
+  --hero-pills: #7a6356;
+  --sheet-edge: rgba(44, 36, 32, 0.08);
+  --nav-surface: rgba(255, 255, 255, 0.96);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .dark {
-  --bg: #141110;
-  --surface: #1f1a17;
-  --text: #f4ede6;
-  --muted: #a89b92;
-  --border: #342c27;
-  --accent: #d88972;
-  --accent-hover: #e09882;
-  --accent-foreground: #141110;
-  --fresh: #7eb7a8;
-  --expiring: #e0b35f;
-  --expired: #dd7a7a;
-  --icon-bg: #2a231f;
-  --shadow-card:
-    0 12px 30px rgba(0, 0, 0, 0.28),
-    0 1px 0 rgba(255, 255, 255, 0.04) inset;
-  --shadow-card-hover:
-    0 18px 42px rgba(0, 0, 0, 0.34),
-    0 1px 0 rgba(255, 255, 255, 0.06) inset;
-  --shadow-button: 0 10px 24px rgba(216, 137, 114, 0.18);
-  --shadow-modal: 0 24px 48px rgba(0, 0, 0, 0.35);
-  --hero-overscroll: #3b2d27;
-  --hero-pills: #5a4840;
+  --bg: #181310;
+  --surface: #242018;
+  --text: #f6efe8;
+  --muted: #9a8d84;
+  --border: #3a312a;
+  --accent: #e0927a;
+  --accent-hover: #eba18c;
+  --accent-foreground: #1a1410;
+  --fresh: #84c4b3;
+  --expiring: #e4b96a;
+  --expired: #e08888;
+  --icon-bg: #2e2620;
+  --shadow-card: none;
+  --shadow-card-hover: none;
+  --shadow-button: none;
+  --shadow-modal: none;
+  --hero-overscroll: #2a201a;
+  --hero-pills: #4a382f;
+  --sheet-edge: rgba(255, 255, 255, 0.09);
+  --nav-surface: #242018;
 }
 
 @theme inline {
@@ -103,6 +99,10 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
+}
+
+html.dark body {
+  background: var(--hero-overscroll);
 }
 
 .font-display {
@@ -206,18 +206,42 @@ input[type='date'] {
 @keyframes fab-breathe {
   0%,
   100% {
-    box-shadow: var(--shadow-button);
+    transform: scale(1);
+    opacity: 1;
   }
 
   50% {
-    box-shadow:
-      0 12px 28px rgba(193, 125, 101, 0.3),
-      0 0 0 5px color-mix(in srgb, var(--accent) 9%, transparent);
+    transform: scale(1.02);
+    opacity: 0.96;
   }
 }
 
 .content-enter {
   animation: fade-in-up 0.5s cubic-bezier(0.22, 0.8, 0.2, 1) both;
+}
+
+.shelf-sheet {
+  border-top: 1px solid var(--sheet-edge);
+}
+
+.shelf-sheet::before {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 48px;
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--text) 4%, transparent),
+    transparent
+  );
+}
+
+.empty-state-icon {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .card-enter {
@@ -242,6 +266,88 @@ input[type='date'] {
   transform: scale(0.9);
 }
 
+/* ── Warm hero background ─────────────────────────────── */
+
+.warm-hero-base {
+  background:
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--hero-overscroll) 88%, #000 12%) 0%,
+      color-mix(in srgb, var(--hero-overscroll) 72%, var(--accent) 28%) 42%,
+      var(--hero-overscroll) 100%
+    );
+}
+
+.warm-hero-orb {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  filter: blur(56px);
+}
+
+.warm-hero-orb--accent {
+  top: -3.5rem;
+  right: -2.5rem;
+  height: 13rem;
+  width: 13rem;
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  opacity: 0.38;
+}
+
+.warm-hero-orb--warm {
+  bottom: -2rem;
+  left: -3rem;
+  height: 10rem;
+  width: 11rem;
+  background: color-mix(in srgb, var(--hero-pills) 70%, var(--accent) 30%);
+  opacity: 0.28;
+}
+
+.warm-hero-orb--fresh {
+  top: 35%;
+  left: 42%;
+  height: 7rem;
+  width: 9rem;
+  background: color-mix(in srgb, var(--fresh) 45%, transparent);
+  opacity: 0.14;
+  filter: blur(48px);
+}
+
+.dark .warm-hero-orb--accent {
+  opacity: 0.32;
+}
+
+.dark .warm-hero-orb--warm {
+  opacity: 0.22;
+}
+
+.dark .warm-hero-orb--fresh {
+  opacity: 0.1;
+}
+
+.warm-hero-vignette {
+  background: radial-gradient(
+    120% 90% at 50% -10%,
+    transparent 40%,
+    color-mix(in srgb, var(--hero-overscroll) 25%, #000 75%) 100%
+  );
+  opacity: 0.35;
+}
+
+.dark .warm-hero-vignette {
+  opacity: 0.5;
+}
+
+.warm-hero-fade {
+  height: 5.5rem;
+  background: linear-gradient(
+    to top,
+    var(--hero-overscroll) 0%,
+    color-mix(in srgb, var(--hero-overscroll) 55%, transparent) 55%,
+    transparent 100%
+  );
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sheet-backdrop,
   .sheet-panel,
@@ -254,4 +360,223 @@ input[type='date'] {
     animation: none !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ── Pulse style ───────────────────────────────────────── */
+
+[data-style='pulse'] {
+  --bg: #edf1f7;
+  --surface: #f8fafc;
+  --text: #0b1220;
+  --muted: #5b667a;
+  --border: #c9d3e2;
+  --accent: #0284c7;
+  --accent-hover: #0369a1;
+  --accent-foreground: #f8fafc;
+  --fresh: #0d9488;
+  --expiring: #d97706;
+  --expired: #dc2626;
+  --icon-bg: #e2e8f0;
+  --hero-overscroll: #0b1220;
+  --hero-pills: transparent;
+  --sheet-edge: rgba(2, 132, 199, 0.28);
+  --nav-surface: #f8fafc;
+  --pulse-grid: rgba(2, 132, 199, 0.14);
+  --pulse-glow: rgba(56, 189, 248, 0.22);
+  --radius-card: 10px;
+  --radius-button: 10px;
+  --radius-sheet: 0px;
+}
+
+.dark[data-style='pulse'] {
+  --bg: #07090d;
+  --surface: #0d1118;
+  --text: #e8eef8;
+  --muted: #7b8798;
+  --border: #232a38;
+  --accent: #38bdf8;
+  --accent-hover: #7dd3fc;
+  --accent-foreground: #031018;
+  --fresh: #2dd4bf;
+  --expiring: #fbbf24;
+  --expired: #f87171;
+  --icon-bg: #151b26;
+  --hero-overscroll: #07090d;
+  --sheet-edge: rgba(56, 189, 248, 0.35);
+  --nav-surface: #0d1118;
+  --pulse-grid: rgba(56, 189, 248, 0.1);
+  --pulse-glow: rgba(14, 165, 233, 0.28);
+}
+
+[data-style='pulse'] .font-display {
+  font-family: var(--font-dm-sans), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+[data-style='pulse'] .pulse-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+[data-style='pulse'] body,
+html[data-style='pulse'] body {
+  background: var(--bg);
+}
+
+html[data-style='pulse'] {
+  background: var(--bg);
+}
+
+[data-style='pulse'] .shelf-sheet {
+  border-top: none;
+}
+
+[data-style='pulse'] .shelf-sheet::before {
+  display: none;
+}
+
+[data-style='pulse'] .empty-state-icon {
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+[data-style='pulse'] .fab-button {
+  animation: none;
+}
+
+[data-style='pulse'] .pulse-dock-active {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
+[data-style='pulse'] .pulse-card {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 88%, var(--bg));
+}
+
+/* ── Riot style ────────────────────────────────────────── */
+
+[data-style='riot'] {
+  --bg: #f2ece2;
+  --surface: #fffdf8;
+  --text: #0a0a0a;
+  --muted: #4a4a4a;
+  --border: #0a0a0a;
+  --accent: #ff1f6b;
+  --accent-hover: #ff4d88;
+  --accent-foreground: #ffffff;
+  --fresh: #00a86b;
+  --expiring: #ff8c00;
+  --expired: #ff1f6b;
+  --icon-bg: #e8ff00;
+  --hero-overscroll: #0a0a0a;
+  --hero-pills: transparent;
+  --sheet-edge: #ff1f6b;
+  --nav-surface: #0a0a0a;
+  --riot-neon: #e8ff00;
+  --radius-card: 0px;
+  --radius-button: 0px;
+  --radius-sheet: 0px;
+}
+
+.dark[data-style='riot'] {
+  --bg: #080808;
+  --surface: #111111;
+  --text: #f5f5f5;
+  --muted: #a3a3a3;
+  --border: #f5f5f5;
+  --accent: #ff2a72;
+  --accent-hover: #ff5c92;
+  --accent-foreground: #0a0a0a;
+  --icon-bg: #1a1a1a;
+  --hero-overscroll: #050505;
+  --nav-surface: #0a0a0a;
+}
+
+[data-style='riot'] .font-display {
+  font-style: italic;
+  letter-spacing: -0.04em;
+}
+
+[data-style='riot'] .riot-scream {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+[data-style='riot'] body,
+html[data-style='riot'] body,
+html[data-style='riot'] {
+  background: var(--bg);
+}
+
+[data-style='riot'] .shelf-sheet {
+  border-top: none;
+}
+
+[data-style='riot'] .shelf-sheet::before {
+  display: none;
+}
+
+[data-style='riot'] .fab-button {
+  animation: none;
+}
+
+[data-style='riot'] .riot-scanlines {
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 2px,
+    rgba(0, 0, 0, 0.35) 2px,
+    rgba(0, 0, 0, 0.35) 4px
+  );
+}
+
+[data-style='riot'] .riot-shelf {
+  border-left: 6px solid var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 25%, transparent);
+}
+
+[data-style='riot'] .riot-shelf::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 3px,
+    var(--text) 3px,
+    var(--text) 4px
+  );
+}
+
+[data-style='riot'] .riot-sticker {
+  border: 2px dashed var(--accent);
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent) 8%);
+}
+
+[data-style='riot'] .riot-card {
+  border: 2px solid var(--border);
+  background: var(--surface);
+  border-radius: 0;
+}
+
+[data-style='riot'] .riot-card:hover {
+  border-color: var(--accent);
+}
+
+[data-style='riot'] .empty-state-icon {
+  border-radius: 0;
+  background: var(--riot-neon);
+  box-shadow: 4px 4px 0 0 var(--accent);
+}
+
+[data-style='riot'] .riot-nav-active {
+  background: var(--accent);
+  color: var(--accent-foreground);
 }

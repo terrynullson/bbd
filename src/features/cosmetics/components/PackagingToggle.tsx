@@ -31,7 +31,7 @@ export function PackagingToggle({ isOpen, onChange }: PackagingToggleProps) {
         >
           <span
             className={cn(
-              'absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform',
+              'absolute top-0.5 h-6 w-6 rounded-full bg-white transition-transform',
               isOpen ? 'translate-x-[22px]' : 'translate-x-0.5',
             )}
           />

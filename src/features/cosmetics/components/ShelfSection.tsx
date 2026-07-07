@@ -19,7 +19,7 @@ export function ShelfSection({
   return (
     <section className="flex flex-col gap-3.5">
       <div className="flex items-center gap-2.5">
-        <h2 className="rounded-full border border-border/50 bg-bg/60 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted shadow-sm">
+        <h2 className="rounded-full border border-border/50 bg-bg/60 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
           {title}
         </h2>
         <div className="h-px min-w-6 flex-1 bg-border/50" />
