@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:brands": "node scripts/seed-brand-catalog.mjs",
+    "seed:products": "node scripts/seed-product-catalog.mjs",
+    "seed:catalog": "node scripts/seed-catalog.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.0",
