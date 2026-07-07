@@ -1,29 +1,22 @@
 'use client';
 
-import { Camera } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { BarcodeScanner } from './BarcodeScanner';
 import { PaoSelector } from './PaoSelector';
 import { PackagingToggle } from './PackagingToggle';
-import { ProductPhotoPicker } from './ProductPhotoPicker';
-import { SmartFillButton } from './SmartFillButton';
 import {
-  SuggestionDropdown,
-  useSuggestionKeyboard,
-} from './SuggestionDropdown';
+  getLookupSourceLabel,
+  ProductSummaryCard,
+} from './ProductSummaryCard';
 import { upsertCatalogProduct } from '../api/catalog-product';
 import { lookupProductByBarcode } from '../api/lookup-product';
-import { fetchProductSuggestions } from '../api/suggest-products';
 import { useAddProductForm } from '../hooks/useAddProductForm';
 import { useAuth } from '@/lib/supabase/use-auth';
-import type {
-  AddProductInput,
-  CosmeticItem,
-  ProductSuggestion,
-} from '../types';
+import { haptic } from '@/lib/haptics';
+import type { AddProductInput, CosmeticItem, PaoSource } from '../types';
 
 type AddProductModalProps = {
   onClose: () => void;
@@ -42,21 +35,20 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function normalizeSuggestion(value: string) {
-  return value.trim().toLowerCase();
-}
+function getDatesHint(isSealed: boolean, paoSource?: PaoSource) {
+  if (isSealed) {
+    return 'Для неоткрытого запаса укажите дату EXP с упаковки.';
+  }
 
-function mergeSuggestions(
-  local: ProductSuggestion[],
-  remote: ProductSuggestion[],
-) {
-  const seen = new Set<string>();
-  return [...local, ...remote].filter((suggestion) => {
-    const key = normalizeSuggestion(`${suggestion.brand ?? ''} ${suggestion.name}`);
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).slice(0, 8);
+  if (paoSource === 'preset') {
+    return 'Укажите PAO и дату вскрытия с упаковки. EXP — опционально. Типичный PAO подобран по категории.';
+  }
+
+  if (paoSource === 'ai_estimate') {
+    return 'Укажите PAO и дату вскрытия с упаковки. EXP — опционально. PAO от ИИ — проверьте на упаковке.';
+  }
+
+  return 'Укажите PAO и дату вскрытия с упаковки. EXP — опционально.';
 }
 
 export function AddProductModal({
@@ -71,135 +63,10 @@ export function AddProductModal({
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isLookupLoading, setIsLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState('');
-  const [remoteBrandSuggestions, setRemoteBrandSuggestions] = useState<ProductSuggestion[]>([]);
-  const [remoteProductSuggestions, setRemoteProductSuggestions] = useState<ProductSuggestion[]>([]);
-  const [brandHighlight, setBrandHighlight] = useState(-1);
-  const [productHighlight, setProductHighlight] = useState(-1);
-  const [brandFocused, setBrandFocused] = useState(false);
-  const [productFocused, setProductFocused] = useState(false);
+  const [nameError, setNameError] = useState('');
   const form = useAddProductForm(item ?? initialValues);
   const isEditing = Boolean(item);
-
-  const localBrandSuggestions = useMemo(() => {
-    const query = normalizeSuggestion(form.brand);
-    if (query.length < 2) return [];
-
-    return localItems
-      .filter((product) => normalizeSuggestion(product.brand).includes(query))
-      .map((product) => ({
-        id: product.id,
-        name: product.brand,
-        source: 'local' as const,
-      }));
-  }, [form.brand, localItems]);
-
-  const localProductSuggestions = useMemo(() => {
-    const query = normalizeSuggestion(form.name);
-    const brand = normalizeSuggestion(form.brand);
-    if (query.length < 2) return [];
-
-    return localItems
-      .filter((product) => {
-        const matchesName = normalizeSuggestion(product.name).includes(query);
-        const matchesBrand = !brand || normalizeSuggestion(product.brand).includes(brand);
-        return matchesName && matchesBrand;
-      })
-      .map((product) => ({
-        id: product.id,
-        brand: product.brand,
-        name: product.name,
-        barcode: product.barcode,
-        paoMonths: product.paoMonths,
-        category: product.category,
-        imageUrl: product.imageUrl,
-        source: 'local' as const,
-      }));
-  }, [form.brand, form.name, localItems]);
-
-  const brandSuggestions = useMemo(
-    () => mergeSuggestions(localBrandSuggestions, remoteBrandSuggestions),
-    [localBrandSuggestions, remoteBrandSuggestions],
-  );
-
-  const productSuggestions = useMemo(
-    () => mergeSuggestions(localProductSuggestions, remoteProductSuggestions),
-    [localProductSuggestions, remoteProductSuggestions],
-  );
-
-  useEffect(() => {
-    setBrandHighlight(brandSuggestions.length > 0 ? 0 : -1);
-  }, [brandSuggestions]);
-
-  useEffect(() => {
-    setProductHighlight(productSuggestions.length > 0 ? 0 : -1);
-  }, [productSuggestions]);
-
-  useEffect(() => {
-    if (form.brand.trim().length < 2) {
-      setRemoteBrandSuggestions([]);
-      return;
-    }
-
-    const timeout = setTimeout(() => {
-      void fetchProductSuggestions({ type: 'brand', query: form.brand })
-        .then(setRemoteBrandSuggestions)
-        .catch(() => setRemoteBrandSuggestions([]));
-    }, 250);
-
-    return () => clearTimeout(timeout);
-  }, [form.brand]);
-
-  useEffect(() => {
-    if (form.name.trim().length < 2) {
-      setRemoteProductSuggestions([]);
-      return;
-    }
-
-    const timeout = setTimeout(() => {
-      void fetchProductSuggestions({
-        type: 'product',
-        query: form.name,
-        brand: form.brand,
-      })
-        .then(setRemoteProductSuggestions)
-        .catch(() => setRemoteProductSuggestions([]));
-    }, 250);
-
-    return () => clearTimeout(timeout);
-  }, [form.brand, form.name]);
-
-  const applyProductSuggestion = (suggestion: ProductSuggestion) => {
-    if (suggestion.brand) form.setBrand(suggestion.brand);
-    form.setName(suggestion.name);
-    if (suggestion.barcode) form.setBarcode(suggestion.barcode, 'manual');
-    if (suggestion.paoMonths) form.setPaoMonths(suggestion.paoMonths, 'catalog');
-    if (suggestion.category) form.setCategory(suggestion.category);
-    if (suggestion.imageUrl) form.setImageUrl(suggestion.imageUrl);
-    form.setLookupSource(suggestion.source === 'catalog' ? 'catalog' : 'manual');
-    setProductFocused(false);
-    setBrandFocused(false);
-  };
-
-  const handleBrandPick = (suggestion: ProductSuggestion) => {
-    form.setBrand(suggestion.name);
-    setBrandFocused(false);
-  };
-
-  const handleBrandKeyDown = useSuggestionKeyboard({
-    suggestions: brandSuggestions,
-    highlightIndex: brandHighlight,
-    setHighlightIndex: setBrandHighlight,
-    onPick: handleBrandPick,
-    enabled: brandFocused,
-  });
-
-  const handleProductKeyDown = useSuggestionKeyboard({
-    suggestions: productSuggestions,
-    highlightIndex: productHighlight,
-    setHighlightIndex: setProductHighlight,
-    onPick: applyProductSuggestion,
-    enabled: productFocused,
-  });
+  const lookupSourceLabel = getLookupSourceLabel(form.lookupSource);
 
   const applyLookupResult = (result: {
     brand?: string;
@@ -219,6 +86,14 @@ export function AddProductModal({
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+
+    if (!form.name.trim()) {
+      setNameError('Укажите название продукта');
+      haptic('error');
+      return;
+    }
+
+    setNameError('');
     const input = form.buildInput();
     if (!input) return;
 
@@ -244,7 +119,7 @@ export function AddProductModal({
       }
 
       setLookupError(
-        'Штрих-код не найден. Заполните название или нажмите „Подобрать“.',
+        'Штрих-код не найден. Заполните остальные поля вручную.',
       );
     } catch (error) {
       setLookupError(
@@ -257,207 +132,125 @@ export function AddProductModal({
     }
   };
 
+  const handleBackToSearch = () => {
+    if (!onQuickAdd) return;
+
+    onQuickAdd({
+      name: form.name.trim() || undefined,
+      brand: form.brand.trim() || undefined,
+      barcode: form.barcode.trim() || undefined,
+      isSealed: form.isSealed,
+      expiresAt: form.expiresAt
+        ? new Date(form.expiresAt).toISOString()
+        : undefined,
+      openedAt: form.openedAt
+        ? new Date(form.openedAt).toISOString()
+        : undefined,
+      paoMonths: form.paoMonths,
+      category: form.category,
+      imageUrl: form.imageUrl.trim() || undefined,
+      lookupSource: form.lookupSource,
+    });
+  };
+
+  const paoHint = getDatesHint(form.isSealed, form.paoSource);
+
   return (
     <>
-      <Modal onClose={onClose}>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 pt-1">
-          <div className="relative">
-            <FieldLabel>Название</FieldLabel>
-            <div className="flex items-stretch gap-2">
-              <Input
-                required
-                aria-label="Название продукта"
-                aria-autocomplete="list"
-                aria-expanded={productFocused && productSuggestions.length > 0}
-                placeholder="Название продукта"
-                value={form.name}
-                className="min-w-0 flex-1"
-                onFocus={() => setProductFocused(true)}
-                onBlur={() => setTimeout(() => setProductFocused(false), 120)}
-                onChange={(e) => {
-                  form.setName(e.target.value);
-                  if (form.smartError) form.setSmartError('');
-                }}
-                onKeyDown={handleProductKeyDown}
-              />
-              <SmartFillButton
-                onClick={form.handleSmartFill}
-                disabled={!form.canSmartFill}
-                loading={form.isSmartLoading}
-              />
-            </div>
-            {productFocused && (
-              <SuggestionDropdown
-                suggestions={productSuggestions}
-                mode="product"
-                highlightIndex={productHighlight}
-                onHighlight={setProductHighlight}
-                onPick={applyProductSuggestion}
-              />
-            )}
-            {form.smartError && (
-              <p className="mt-2 text-xs text-expired">{form.smartError}</p>
-            )}
-            {form.smartFillOfflineMessage && (
-              <p className="mt-2 text-xs text-muted">
-                {form.smartFillOfflineMessage}
-              </p>
-            )}
-          </div>
-
-          <div className="relative">
-            <FieldLabel>Бренд</FieldLabel>
-            <Input
-              aria-label="Бренд"
-              aria-autocomplete="list"
-              aria-expanded={brandFocused && brandSuggestions.length > 0}
-              placeholder="Бренд"
-              value={form.brand}
-              onFocus={() => setBrandFocused(true)}
-              onBlur={() => setTimeout(() => setBrandFocused(false), 120)}
-              onChange={(e) => {
-                form.setBrand(e.target.value);
-                if (form.smartError) form.setSmartError('');
-              }}
-              onKeyDown={handleBrandKeyDown}
-            />
-            {brandFocused && (
-              <SuggestionDropdown
-                suggestions={brandSuggestions}
-                mode="brand"
-                highlightIndex={brandHighlight}
-                onHighlight={setBrandHighlight}
-                onPick={handleBrandPick}
-              />
-            )}
-          </div>
-
-          <div>
-            <FieldLabel>Штрих-код</FieldLabel>
-            <div className="flex items-stretch gap-2">
-              <Input
-                aria-label="Штрих-код"
-                placeholder="Штрих-код"
-                value={form.barcode}
-                onChange={(e) => {
-                  form.setBarcode(e.target.value, 'manual');
-                  setLookupError('');
-                }}
-                className="min-w-0 flex-1"
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setIsScannerOpen(true)}
-                aria-label="Сканировать штрих-код"
-                disabled={isLookupLoading}
-                className="h-12 w-12 shrink-0 rounded-[14px] p-0 shadow-none"
-              >
-                <Camera className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-          {(isLookupLoading || lookupError) && (
-            <p
-              className={`-mt-2 text-xs ${
-                lookupError ? 'text-muted' : 'text-accent'
-              }`}
-            >
-              {isLookupLoading
-                ? 'Ищем продукт по штрих-коду...'
-                : lookupError}
-            </p>
-          )}
-
-          <div>
-            <FieldLabel>Фото</FieldLabel>
-            <ProductPhotoPicker
-              value={form.imageUrl}
-              onChange={form.setImageUrl}
-              userId={user?.id}
-            />
-          </div>
-
-          <div>
-            <FieldLabel>Дата вскрытия</FieldLabel>
-            <Input
-              type="date"
-              value={form.openedAt}
-              max={new Date().toISOString().slice(0, 10)}
-              disabled={form.isSealed}
-              onChange={(e) => form.setOpenedAt(e.target.value)}
-            />
-          </div>
-
-          <PackagingToggle
-            isOpen={!form.isSealed}
-            onChange={(isOpen) => {
-              form.setIsSealed(!isOpen);
-              if (isOpen) {
-                form.setOpenedAt(new Date().toISOString().slice(0, 10));
-              }
-            }}
-          />
-
-          <div>
-            <FieldLabel>Годен до</FieldLabel>
-            <Input
-              type="date"
-              value={form.expiresAt}
-              onChange={(e) => form.setExpiresAt(e.target.value)}
-            />
-            <p className="mt-1.5 text-xs text-muted">
-              {form.isSealed
-                ? 'Дата с упаковки (EXP). Основной срок для неоткрытого средства.'
-                : 'Если на упаковке есть срок годности — укажите его. Действует то, что наступит раньше: EXP или PAO.'}
-            </p>
-          </div>
-
-          <div>
-            <FieldLabel>Срок после вскрытия</FieldLabel>
-            <PaoSelector value={form.paoMonths} onChange={form.setPaoMonths} />
-            {form.paoSource === 'preset' && (
-              <p className="mt-1.5 text-xs text-muted">
-                Типичный срок для категории. Уточните по упаковке.
-              </p>
-            )}
-            {form.paoSource === 'ai_estimate' && (
-              <p className="mt-1.5 text-xs text-muted">
-                Примерный срок. Ориентируйтесь на упаковку.
-              </p>
-            )}
-          </div>
-
-          <Button type="submit" size="lg" className="mt-1 h-12 w-full rounded-[14px]">
-            {isEditing ? 'Сохранить изменения' : 'Сохранить'}
-          </Button>
-
-          {!isEditing && onQuickAdd && (
+      <Modal
+        title={isEditing ? 'Редактирование' : 'Новый продукт'}
+        headerExtra={
+          !isEditing && onQuickAdd ? (
             <button
               type="button"
-              onClick={() => {
-                onQuickAdd({
-                  name: form.name.trim() || undefined,
-                  brand: form.brand.trim() || undefined,
-                  barcode: form.barcode.trim() || undefined,
-                  isSealed: form.isSealed,
-                  expiresAt: form.expiresAt
-                    ? new Date(form.expiresAt).toISOString()
-                    : undefined,
-                  openedAt: form.openedAt
-                    ? new Date(form.openedAt).toISOString()
-                    : undefined,
-                  paoMonths: form.paoMonths,
-                  category: form.category,
-                  imageUrl: form.imageUrl.trim() || undefined,
-                  lookupSource: form.lookupSource,
-                });
-              }}
-              className="text-center text-sm text-muted underline-offset-2 transition-colors hover:text-text hover:underline"
+              onClick={handleBackToSearch}
+              className="mt-1 text-left text-sm text-muted underline-offset-2 transition-colors hover:text-text hover:underline"
             >
-              Добавить по ШК
+              Назад
             </button>
-          )}
+          ) : undefined
+        }
+        onClose={onClose}
+      >
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col">
+          <div className="flex flex-col gap-4 pb-4">
+            <ProductSummaryCard
+              form={form}
+              localItems={localItems}
+              isEditing={isEditing}
+              initialValues={initialValues}
+              lookupSourceLabel={lookupSourceLabel}
+              onOpenScanner={() => setIsScannerOpen(true)}
+              isLookupLoading={isLookupLoading}
+              lookupError={lookupError}
+              onLookupErrorClear={() => setLookupError('')}
+              userId={user?.id}
+              nameError={nameError}
+              onClearNameError={() => setNameError('')}
+            />
+
+            <section className="rounded-[14px] border border-border/60 bg-bg/30 p-3">
+              <PackagingToggle
+                isOpen={!form.isSealed}
+                onChange={(isOpen) => {
+                  form.setIsSealed(!isOpen);
+                  if (isOpen) {
+                    form.setOpenedAt(new Date().toISOString().slice(0, 10));
+                  }
+                }}
+              />
+
+              {!form.isSealed ? (
+                <div className="mt-3 space-y-3 border-t border-border/40 pt-3">
+                  <div>
+                    <FieldLabel>Дата вскрытия</FieldLabel>
+                    <Input
+                      type="date"
+                      value={form.openedAt}
+                      max={new Date().toISOString().slice(0, 10)}
+                      onChange={(e) => form.setOpenedAt(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <FieldLabel>Срок после вскрытия (PAO)</FieldLabel>
+                    <PaoSelector
+                      value={form.paoMonths}
+                      onChange={form.setPaoMonths}
+                    />
+                  </div>
+
+                  <div>
+                    <FieldLabel>Годен до (опционально)</FieldLabel>
+                    <Input
+                      type="date"
+                      value={form.expiresAt}
+                      onChange={(e) => form.setExpiresAt(e.target.value)}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 border-t border-border/40 pt-3">
+                  <FieldLabel>Годен до</FieldLabel>
+                  <Input
+                    type="date"
+                    value={form.expiresAt}
+                    onChange={(e) => form.setExpiresAt(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <p className="mt-3 text-xs leading-relaxed text-muted">
+                {paoHint}
+              </p>
+            </section>
+          </div>
+
+          <div className="sticky bottom-0 -mx-5 border-t border-border/60 bg-surface px-5 pb-5 pt-3">
+            <Button type="submit" size="lg" className="h-12 w-full rounded-[14px]">
+              {isEditing ? 'Сохранить изменения' : 'Сохранить'}
+            </Button>
+          </div>
         </form>
       </Modal>
 

@@ -16,7 +16,7 @@ export function CosmeticsDashboard({
   const sections = buildShelfSections(items);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       {sections.map((section) => (
         <ShelfSection
           key={section.id}

@@ -75,7 +75,7 @@ export function ProductMatchPicker({
               'mt-3 w-full rounded-[14px] bg-accent px-4 py-3 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover',
             )}
           >
-            Открыть форму
+            Проверить и сохранить
           </button>
         </div>
       )}

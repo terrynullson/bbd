@@ -17,14 +17,14 @@ export function ShelfSection({
   if (items.length === 0) return null;
 
   return (
-    <section className="flex flex-col gap-3.5">
-      <div className="flex items-center gap-2.5">
-        <h2 className="rounded-full border border-border/50 bg-bg/60 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+    <section className="flex flex-col gap-2.5">
+      <div className="flex items-center gap-2">
+        <h2 className="rounded-full border border-border/50 bg-bg/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
           {title}
         </h2>
-        <div className="h-px min-w-6 flex-1 bg-border/50" />
+        <div className="h-px min-w-4 flex-1 bg-border/50" />
       </div>
-      <div className="flex flex-col gap-3.5">
+      <div className="flex flex-col gap-2.5">
         {items.map((item, index) => (
           <div
             key={item.id}

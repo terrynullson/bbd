@@ -10,6 +10,7 @@ type SuggestionDropdownProps = {
   highlightIndex: number;
   onPick: (suggestion: ProductSuggestion) => void;
   onHighlight: (index: number) => void;
+  heading?: string;
 };
 
 function getLabel(suggestion: ProductSuggestion, mode: 'brand' | 'product') {
@@ -31,6 +32,7 @@ export function SuggestionDropdown({
   highlightIndex,
   onPick,
   onHighlight,
+  heading,
 }: SuggestionDropdownProps) {
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -42,12 +44,20 @@ export function SuggestionDropdown({
   if (suggestions.length === 0) return null;
 
   return (
-    <ul
-      ref={listRef}
-      role="listbox"
+    <div
       data-sheet-no-drag
-      className="absolute inset-x-0 top-full z-20 mt-1 max-h-52 overflow-y-auto rounded-[14px] border border-border/60 bg-surface/90 backdrop-blur-md"
+      className="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-[14px] border border-border/60 bg-surface/90 backdrop-blur-md"
     >
+      {heading && (
+        <p className="border-b border-border/40 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
+          {heading}
+        </p>
+      )}
+      <ul
+        ref={listRef}
+        role="listbox"
+        className="max-h-52 overflow-y-auto overscroll-y-none"
+      >
       {suggestions.map((suggestion, index) => {
         const sourceLabel = getSourceLabel(suggestion.source);
 
@@ -73,7 +83,8 @@ export function SuggestionDropdown({
           </li>
         );
       })}
-    </ul>
+      </ul>
+    </div>
   );
 }
 

@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 
 type ModalProps = {
   title?: string;
+  headerExtra?: ReactNode;
   children: ReactNode;
   onClose: () => void;
   className?: string;
@@ -29,7 +30,13 @@ function isDragBlockedTarget(target: EventTarget | null) {
   );
 }
 
-export function Modal({ title, children, onClose, className }: ModalProps) {
+export function Modal({
+  title,
+  headerExtra,
+  children,
+  onClose,
+  className,
+}: ModalProps) {
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -185,6 +192,7 @@ export function Modal({ title, children, onClose, className }: ModalProps) {
               {title}
             </h2>
           )}
+          {headerExtra}
         </div>
 
         <div

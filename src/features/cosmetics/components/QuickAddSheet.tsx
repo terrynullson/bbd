@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { BarcodeScanner } from './BarcodeScanner';
-import { PackagingToggle } from './PackagingToggle';
 import { ProductMatchPicker } from './ProductMatchPicker';
 import {
   SuggestionDropdown,
@@ -18,6 +17,10 @@ import { lookupProductByBarcode } from '../api/lookup-product';
 import { fetchProductSuggestions } from '../api/suggest-products';
 import { assessBarcodeTrust } from '../lib/barcode';
 import { inferCategoryFromText } from '../lib/categories';
+import {
+  GENERIC_AI_RESULT_MESSAGE,
+  isLowQualityAiResult,
+} from '../lib/ai-result-quality';
 import { getDefaultPaoMonths, inferTaxonomy } from '../lib/taxonomy';
 import { haptic } from '@/lib/haptics';
 import type {
@@ -29,11 +32,12 @@ import type {
   ProductSuggestion,
 } from '../types';
 
+const SUGGEST_MIN_CHARS = 4;
+
 type QuickAddSheetProps = {
   localItems: CosmeticItem[];
   initialDraft?: Partial<AddProductInput>;
   onClose: () => void;
-  onSubmit: (input: AddProductInput) => void;
   onManualFill: (draft: Partial<AddProductInput>) => void;
 };
 
@@ -133,14 +137,11 @@ export function QuickAddSheet({
   localItems,
   initialDraft,
   onClose,
-  onSubmit,
   onManualFill,
 }: QuickAddSheetProps) {
   const [name, setName] = useState(initialDraft?.name ?? '');
   const [barcode, setBarcode] = useState(initialDraft?.barcode ?? '');
-  const [isPackagingOpen, setIsPackagingOpen] = useState(
-    initialDraft?.isSealed === undefined ? false : !initialDraft.isSealed,
-  );
+  const [barcodeNotFound, setBarcodeNotFound] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -158,6 +159,8 @@ export function QuickAddSheet({
     typeof navigator === 'undefined' ? true : navigator.onLine,
   );
 
+  const isSealed = initialDraft?.isSealed ?? true;
+
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -171,7 +174,7 @@ export function QuickAddSheet({
 
   const localSuggestions = useMemo(() => {
     const query = normalizeSuggestion(name);
-    if (query.length < 2) return [];
+    if (query.length < SUGGEST_MIN_CHARS) return [];
 
     return localItems
       .filter((product) => normalizeSuggestion(product.name).includes(query))
@@ -197,7 +200,7 @@ export function QuickAddSheet({
   }, [suggestions]);
 
   useEffect(() => {
-    if (name.trim().length < 2) {
+    if (name.trim().length < SUGGEST_MIN_CHARS) {
       setRemoteSuggestions([]);
       return;
     }
@@ -211,11 +214,14 @@ export function QuickAddSheet({
     return () => clearTimeout(timeout);
   }, [name]);
 
-  const isSealed = !isPackagingOpen;
+  const trimmedName = name.trim();
+  const trimmedBarcode = barcode.trim();
+  const canPick =
+    isOnline && (trimmedName.length >= SUGGEST_MIN_CHARS || Boolean(trimmedBarcode));
 
   const buildDraft = (extra?: Partial<AddProductInput>): Partial<AddProductInput> => ({
-    name: name.trim() || undefined,
-    barcode: barcode.trim() || undefined,
+    name: trimmedName || undefined,
+    barcode: trimmedBarcode || undefined,
     isSealed,
     openedAt: new Date(todayIso()).toISOString(),
     lookupSource: 'manual',
@@ -234,8 +240,8 @@ export function QuickAddSheet({
       suggestionToInput(
         suggestion,
         isSealed,
-        barcode.trim() || suggestion.barcode,
-        barcode.trim() ? 'scan' : undefined,
+        trimmedBarcode || suggestion.barcode,
+        trimmedBarcode ? 'scan' : undefined,
       ),
     );
     onClose();
@@ -249,16 +255,10 @@ export function QuickAddSheet({
     enabled: isFocused && matchStep === 'form',
   });
 
-  const submitProduct = (input: AddProductInput) => {
-    onSubmit(input);
-    haptic('success');
-    onClose();
-  };
-
-  const collectMatches = async (trimmedName: string) => {
-    const query = normalizeSuggestion(trimmedName);
+  const collectMatches = async (queryName: string) => {
+    const query = normalizeSuggestion(queryName);
     const local =
-      query.length < 2
+      query.length < SUGGEST_MIN_CHARS
         ? []
         : localItems
             .filter((product) => normalizeSuggestion(product.name).includes(query))
@@ -274,107 +274,14 @@ export function QuickAddSheet({
             }));
 
     const remote =
-      query.length >= 2
-        ? await fetchProductSuggestions({ type: 'product', query: trimmedName })
+      query.length >= SUGGEST_MIN_CHARS
+        ? await fetchProductSuggestions({ type: 'product', query: queryName })
         : [];
 
     return mergeSuggestions(local, remote);
   };
 
-  const handleQuickAdd = async () => {
-    const trimmedName = name.trim();
-    const trimmedBarcode = barcode.trim();
-
-    if (!trimmedName && !trimmedBarcode) {
-      setError('Введите название или отсканируйте штрих-код');
-      haptic('error');
-      return;
-    }
-
-    setIsLoading(true);
-    setError('');
-    haptic('medium');
-
-    try {
-      if (trimmedBarcode) {
-        const lookup = await lookupProductByBarcode(trimmedBarcode);
-        if (lookup.found && lookup.name) {
-          const suggestion = lookupToSuggestion(lookup, trimmedBarcode);
-          submitProduct(
-            suggestionToInput(
-              suggestion,
-              isSealed,
-              trimmedBarcode,
-              'scan',
-              lookup,
-            ),
-          );
-          return;
-        }
-
-        if (!trimmedName) {
-          setError('Штрих-код не найден. Введите название или нажмите «Подобрать»');
-          haptic('error');
-          return;
-        }
-      }
-
-      if (trimmedName) {
-        const matches = await collectMatches(trimmedName);
-
-        if (matches.length === 1) {
-          submitProduct(
-            suggestionToInput(
-              matches[0]!,
-              isSealed,
-              trimmedBarcode || matches[0]!.barcode,
-              trimmedBarcode ? 'scan' : undefined,
-            ),
-          );
-          return;
-        }
-
-        if (matches.length > 1) {
-          setError('Найдено несколько вариантов — нажмите «Подобрать»');
-          haptic('error');
-          return;
-        }
-
-        if (!trimmedBarcode) {
-          const category = inferCategoryFromText(trimmedName);
-          submitProduct({
-            name: trimmedName,
-            brand: 'Неизвестный бренд',
-            paoMonths: getPresetPaoMonths(category, trimmedName),
-            openedAt: new Date(todayIso()).toISOString(),
-            isSealed,
-            category,
-            lookupSource: 'manual',
-            paoSource: 'preset',
-          });
-          return;
-        }
-
-        setError('Не удалось добавить. Нажмите «Подобрать» или заполните вручную');
-        haptic('error');
-        return;
-      }
-    } catch (submitError) {
-      setError(
-        submitError instanceof Error
-          ? submitError.message
-          : 'Не удалось добавить продукт',
-      );
-      haptic('error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handlePickSearch = async () => {
-    const trimmedName = name.trim();
-    const trimmedBarcode = barcode.trim();
-
     if (!trimmedName && !trimmedBarcode) {
       setError('Введите название или отсканируйте штрих-код');
       haptic('error');
@@ -395,6 +302,7 @@ export function QuickAddSheet({
       if (trimmedBarcode) {
         const lookup = await lookupProductByBarcode(trimmedBarcode);
         if (lookup.found && lookup.name) {
+          setBarcodeNotFound(false);
           setMatchSuggestions([lookupToSuggestion(lookup, trimmedBarcode)]);
           setAiResult(null);
           setMatchStep('matches');
@@ -416,6 +324,13 @@ export function QuickAddSheet({
         name: trimmedName || undefined,
         barcode: trimmedBarcode || undefined,
       });
+
+      if (isLowQualityAiResult(result, { hasBarcode: Boolean(trimmedBarcode) })) {
+        setError(GENERIC_AI_RESULT_MESSAGE);
+        setMatchStep('form');
+        haptic('error');
+        return;
+      }
 
       setMatchSuggestions([]);
       setAiResult(result);
@@ -443,12 +358,12 @@ export function QuickAddSheet({
       buildDraft({
         name: aiResult.name,
         brand: aiResult.brand,
-        barcode: barcode.trim() || undefined,
+        barcode: trimmedBarcode || undefined,
         paoMonths: aiResult.paoMonths,
         category:
           aiResult.category ??
           inferCategoryFromText(`${aiResult.brand} ${aiResult.name}`),
-        lookupSource: barcode.trim() ? 'ai-barcode' : 'ai',
+        lookupSource: trimmedBarcode ? 'ai-barcode' : 'ai',
         paoSource: 'ai_estimate',
       }),
     );
@@ -458,6 +373,7 @@ export function QuickAddSheet({
 
   const handleBarcodeScan = async (code: string) => {
     setBarcode(code);
+    setBarcodeNotFound(false);
     setIsScannerOpen(false);
     setError('');
     haptic('success');
@@ -474,11 +390,8 @@ export function QuickAddSheet({
     } catch {
       // Unknown barcode — keep code only, user picks next action.
     }
-  };
 
-  const handleFormSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    void handleQuickAdd();
+    setBarcodeNotFound(true);
   };
 
   const matchTitle =
@@ -490,11 +403,8 @@ export function QuickAddSheet({
     <>
       <Modal title="Новый продукт" onClose={onClose}>
         {matchStep === 'form' ? (
-          <form onSubmit={handleFormSubmit} className="flex flex-col gap-5 pt-1">
+          <div className="flex flex-col gap-5 pt-1">
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
-                Название
-              </p>
               <div className="relative">
                 <Input
                   aria-label="Название продукта"
@@ -507,90 +417,72 @@ export function QuickAddSheet({
                   onBlur={() => setTimeout(() => setIsFocused(false), 120)}
                   onChange={(e) => {
                     setName(e.target.value);
+                    setBarcodeNotFound(false);
                     if (error) setError('');
                   }}
-                  onKeyDown={(event) => {
-                    if (
-                      event.key === 'Enter' &&
-                      (highlightIndex < 0 || suggestions.length === 0)
-                    ) {
-                      return;
-                    }
-                    handleSuggestionKeyDown(event);
-                  }}
-                  className="pr-12"
+                  onKeyDown={handleSuggestionKeyDown}
+                  className="pr-[5.75rem]"
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    haptic('light');
-                    setIsScannerOpen(true);
-                  }}
-                  disabled={isLoading}
-                  aria-label="Сканировать штрих-код"
-                  className="absolute right-1 top-1/2 h-10 w-10 -translate-y-1/2 shadow-none"
-                >
-                  <ScanBarcode className="h-5 w-5 text-muted" />
-                </Button>
-                {isFocused && (
+                <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-0.5">
+                  {canPick && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => void handlePickSearch()}
+                      disabled={isLoading}
+                      aria-label="Подобрать"
+                      title="Подобрать"
+                      className="h-9 w-9 shrink-0 shadow-none"
+                    >
+                      {isLoading ? (
+                        <Spinner />
+                      ) : (
+                        <Sparkles className="h-4 w-4 text-accent" />
+                      )}
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      haptic('light');
+                      setIsScannerOpen(true);
+                    }}
+                    disabled={isLoading}
+                    aria-label="Сканировать штрих-код"
+                    className="h-9 w-9 shrink-0 shadow-none"
+                  >
+                    <ScanBarcode className="h-5 w-5 text-muted" />
+                  </Button>
+                </div>
+                {isFocused && suggestions.length > 0 && (
                   <SuggestionDropdown
                     suggestions={suggestions}
                     mode="product"
                     highlightIndex={highlightIndex}
                     onHighlight={setHighlightIndex}
                     onPick={openManualFromSuggestion}
+                    heading="Возможно, вы имели в виду"
                   />
                 )}
               </div>
-              {barcode && (
-                <p className="mt-2 text-xs text-muted">Штрих-код: {barcode}</p>
+              {barcodeNotFound && (
+                <p className="mt-2 text-xs leading-relaxed text-muted">
+                  Не нашли продукт по штрих-коду.{' '}
+                  <button
+                    type="button"
+                    onClick={handleManualFill}
+                    className="font-medium text-accent underline-offset-2 hover:underline"
+                  >
+                    Полная форма
+                  </button>
+                </p>
               )}
             </div>
 
-            <PackagingToggle
-              isOpen={isPackagingOpen}
-              onChange={setIsPackagingOpen}
-            />
-
-            {!isPackagingOpen && (
-              <p className="text-xs leading-relaxed text-muted">
-                Удобнее отслеживать открытые средства. Для запаса укажите «Годен
-                до» в{' '}
-                <button
-                  type="button"
-                  onClick={handleManualFill}
-                  className="font-medium text-accent underline-offset-2 hover:underline"
-                >
-                  ручной форме
-                </button>
-                .
-              </p>
-            )}
-
             {error && <p className="text-xs text-expired">{error}</p>}
-
-            <Button
-              type="submit"
-              size="lg"
-              disabled={isLoading}
-              className="h-12 w-full rounded-[14px]"
-            >
-              {isLoading ? <Spinner /> : 'Добавить'}
-            </Button>
-
-            <Button
-              type="button"
-              variant="secondary"
-              size="lg"
-              disabled={isLoading || !isOnline}
-              onClick={() => void handlePickSearch()}
-              className="h-12 w-full rounded-[14px]"
-            >
-              <Sparkles className="mr-2 h-4 w-4" />
-              Подобрать
-            </Button>
 
             {!isOnline && (
               <p className="text-center text-xs text-muted">
@@ -604,9 +496,9 @@ export function QuickAddSheet({
               disabled={isLoading}
               className="text-center text-sm text-muted underline-offset-2 transition-colors hover:text-text hover:underline disabled:opacity-50"
             >
-              Заполнить вручную
+              Полная форма
             </button>
-          </form>
+          </div>
         ) : (
           <ProductMatchPicker
             suggestions={matchStep === 'matches' ? matchSuggestions : []}

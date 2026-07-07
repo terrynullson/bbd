@@ -114,6 +114,9 @@ export function CosmeticsPage() {
     [items, shelfFilter],
   );
 
+  const { designStyle } = useDesignStyle();
+  const isWarmStyle = designStyle === 'warm';
+
   if (!isLoaded) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-bg text-muted">
@@ -127,9 +130,6 @@ export function CosmeticsPage() {
     items.length > 0
       ? `${summary.fresh} свежих · ${summary.expiring} истекают · ${summary.expired} просрочено`
       : null;
-
-  const { designStyle } = useDesignStyle();
-  const isWarmStyle = designStyle === 'warm';
 
   const toastPosition = isSheetOpen
     ? 'bottom-[calc(1rem+var(--safe-bottom))]'
@@ -155,14 +155,17 @@ export function CosmeticsPage() {
         isWarmStyle ? 'bg-[var(--hero-overscroll)]' : 'bg-bg',
       )}
     >
-      <PageHero summary={summaryLine} compact={items.length === 0} />
+      <PageHero summary={summaryLine} compact={items.length > 0} />
 
       <main
         ref={mainRef}
         className={cn(
           'content-enter relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-none px-4',
           designStyle === 'warm' &&
-            'shelf-sheet z-10 -mt-12 rounded-t-[var(--radius-sheet)] bg-surface pb-[calc(5.25rem+var(--safe-bottom))] pt-5',
+            cn(
+              'shelf-sheet z-10 rounded-t-[var(--radius-sheet)] bg-surface pb-[calc(5.25rem+var(--safe-bottom))]',
+              items.length === 0 ? '-mt-12 pt-5' : '-mt-5 pt-5',
+            ),
           designStyle === 'pulse' &&
             'z-10 bg-bg pb-[calc(4.75rem+var(--safe-bottom))] pt-4',
           designStyle === 'riot' &&
@@ -174,7 +177,7 @@ export function CosmeticsPage() {
         ) : (
           <>
             <ShelfTip />
-            <div className="mt-4 flex flex-col gap-5">
+            <div className="mt-2 flex flex-col gap-3">
               <ShelfFilters value={shelfFilter} onChange={setShelfFilter} />
               {filteredItems.length > 0 ? (
                 <CosmeticsDashboard
@@ -209,7 +212,6 @@ export function CosmeticsPage() {
             setIsQuickAddOpen(false);
             setQuickAddDraft(undefined);
           }}
-          onSubmit={(input) => addItem(input)}
           onManualFill={(draft) => openManualAdd(draft)}
         />
       )}

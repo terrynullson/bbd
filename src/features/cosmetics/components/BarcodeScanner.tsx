@@ -282,7 +282,7 @@ export function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScannerProps) 
               Попробовать снова
             </Button>
             <Button variant="secondary" className="w-full" onClick={() => void handleClose()}>
-              Ввести вручную
+              Полная форма
             </Button>
           </div>
         )}

@@ -50,7 +50,7 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
   return (
     <article
       className={cn(
-        'motion-safe-transition p-4 transition-all duration-300 active:scale-[0.995]',
+        'motion-safe-transition p-3 transition-all duration-300 active:scale-[0.995]',
         designStyle === 'pulse'
           ? 'pulse-card hover:border-accent/35'
           : designStyle === 'riot'
@@ -58,8 +58,8 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
             : 'rounded-card border border-border/60 bg-bg hover:border-accent/25',
       )}
     >
-      <div className="flex gap-3.5">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[18px] bg-icon-bg text-accent ring-1 ring-border/50">
+      <div className="flex gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-icon-bg text-accent ring-1 ring-border/50">
           {item.imageUrl ? (
             <div
               className="h-full w-full bg-cover bg-center"
@@ -72,13 +72,13 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
           )}
         </div>
 
-        <div className="min-w-0 flex-1 pt-0.5">
+        <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
                 {getSubtypeLabel(item)}
               </p>
-              <h3 className="mt-1 font-display text-[1.08rem] font-semibold leading-snug text-text">
+              <h3 className="mt-0.5 font-display text-base font-semibold leading-snug text-text">
                 {item.name}
               </h3>
               <p className="mt-0.5 truncate text-xs text-muted">{item.brand}</p>
@@ -88,7 +88,7 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
                 </p>
               )}
             </div>
-            <div className="flex shrink-0 items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-1">
               <Badge variant={item.status} solid>
                 {isSealed && !item.expiresAt
                   ? 'Не открыт'
@@ -98,7 +98,7 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
                 type="button"
                 onClick={() => onEdit(item)}
                 aria-label="Редактировать"
-                className="motion-safe-transition inline-flex h-8 w-8 items-center justify-center rounded-full text-muted transition-all duration-200 hover:bg-surface hover:text-accent active:scale-95"
+                className="motion-safe-transition inline-flex h-7 w-7 items-center justify-center rounded-full text-muted transition-all duration-200 hover:bg-surface hover:text-accent active:scale-95"
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
@@ -107,10 +107,10 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
         </div>
       </div>
 
-      <div className="mt-4 space-y-3 border-t border-border/45 pt-3.5">
-        <div className="flex items-center justify-between gap-3 text-[12px] text-muted">
+      <div className="mt-2.5 space-y-2 border-t border-border/45 pt-2.5">
+        <div className="flex items-center justify-between gap-2 text-[11px] text-muted">
           <span className="min-w-0 shrink">{statusLine}</span>
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-1.5">
             {!isSealed && (
               <span className="truncate">{item.paoMonths}M PAO</span>
             )}
@@ -118,18 +118,18 @@ export function CosmeticCard({ item, onRemove, onEdit }: CosmeticCardProps) {
               type="button"
               onClick={() => onRemove(item.id)}
               aria-label="Удалить"
-              className="motion-safe-transition touch-target inline-flex shrink-0 items-center justify-center rounded-full text-muted transition-all duration-200 hover:bg-expired/10 hover:text-expired active:scale-95"
+              className="motion-safe-transition inline-flex shrink-0 items-center justify-center rounded-full p-1 text-muted transition-all duration-200 hover:bg-expired/10 hover:text-expired active:scale-95"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
 
         {limitingLabel && (
-          <p className="text-[11px] text-muted">{limitingLabel}</p>
+          <p className="text-[10px] leading-snug text-muted">{limitingLabel}</p>
         )}
 
-        <div className="h-2 overflow-hidden rounded-full bg-surface/85">
+        <div className="h-1.5 overflow-hidden rounded-full bg-surface/85">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
               item.status === 'fresh'

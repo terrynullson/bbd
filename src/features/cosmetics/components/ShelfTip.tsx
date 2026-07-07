@@ -25,10 +25,10 @@ export function ShelfTip() {
   return (
     <div
       className={cn(
-        'mb-3 px-4 py-3',
+        'mb-2 rounded-[12px] px-3 py-2',
         designStyle === 'riot'
           ? 'riot-sticker'
-          : 'rounded-[14px] border border-accent/18 bg-accent/8',
+          : 'border border-accent/18 bg-accent/8',
       )}
     >
       <div className="flex items-start justify-between gap-2">
