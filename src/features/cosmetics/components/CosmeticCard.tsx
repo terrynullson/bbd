@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { getDaysRemaining, getPaoProgress, resolveExpiry } from '../lib/calculate-status';
 import { expiryParamsFromItem, formatExpiryDate } from '../lib/expiry';
-import { daysText } from '../lib/plural';
+import { daysLeftLine } from '../lib/plural';
 import { getSubtypeLabel } from '../lib/taxonomy';
 import { StatusRing } from './StatusRing';
 import type { CosmeticItem } from '../types';
@@ -44,10 +44,7 @@ export function CosmeticCard({ item, onRemove, onOpen }: CosmeticCardProps) {
     if (isSealed && item.expiresAt) {
       return `не открыт · до ${formatExpiryDate(item.expiresAt)}`;
     }
-    if (item.status === 'expired') {
-      return `просрочен ${daysText(Math.abs(daysRemaining))} назад`;
-    }
-    return `осталось ${daysText(daysRemaining)}`;
+    return daysLeftLine(daysRemaining);
   })();
 
   // Бренд информативнее подтипа; ярлык подтипа отбрасываем, если он повторяет название.

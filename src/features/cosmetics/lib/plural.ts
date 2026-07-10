@@ -11,3 +11,16 @@ export function plural(n: number, forms: [string, string, string]): string {
 export function daysText(n: number): string {
   return `${n} ${plural(n, ['день', 'дня', 'дней'])}`;
 }
+
+/** Короткий остаток срока по календарным дням: 0 → «сегодня». */
+export function remainingText(calendarDays: number): string {
+  if (calendarDays === 0) return 'сегодня';
+  return daysText(calendarDays);
+}
+
+/** Полная строка остатка для карточки: «истекает сегодня» / «осталось N» / «просрочен N назад». */
+export function daysLeftLine(calendarDays: number): string {
+  if (calendarDays === 0) return 'истекает сегодня';
+  if (calendarDays < 0) return `просрочен ${daysText(-calendarDays)} назад`;
+  return `осталось ${daysText(calendarDays)}`;
+}

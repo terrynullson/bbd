@@ -1,6 +1,7 @@
 import { EXPIRING_THRESHOLD_DAYS } from '@/lib/constants';
 import type { CosmeticStatus } from '../types';
 import {
+  getCalendarDaysUntil,
   getDaysUntil,
   NO_EXPIRY_SORT_DAYS,
   resolveExpiry,
@@ -22,11 +23,12 @@ export function calculateStatus(params: ExpiryParams): CosmeticStatus {
   return statusFromDays(days);
 }
 
+/** Календарные дни до срока: сегодня → 0, просрочка отрицательна. Для показа и сортировки. */
 export function getDaysRemaining(params: ExpiryParams): number {
   const { effectiveEnd } = resolveExpiry(params);
   if (!effectiveEnd) return NO_EXPIRY_SORT_DAYS;
 
-  const days = getDaysUntil(effectiveEnd);
+  const days = getCalendarDaysUntil(effectiveEnd);
   if (days === null) return NO_EXPIRY_SORT_DAYS;
   return days;
 }

@@ -9,7 +9,7 @@ import {
   resolveExpiry,
 } from '../lib/calculate-status';
 import { expiryParamsFromItem, getLimitingLabel } from '../lib/expiry';
-import { daysText, plural } from '../lib/plural';
+import { plural, remainingText } from '../lib/plural';
 import { getSubtypeLabel } from '../lib/taxonomy';
 import { StatusRing } from './StatusRing';
 import type { CosmeticItem, UpdateProductInput } from '../types';
@@ -108,8 +108,8 @@ export function ProductDetailSheet({
     if (!hasExpiry) return 'Срок не указан';
     if (item.status === 'expired') return 'Просрочен — лучше заменить';
     if (item.status === 'expiring')
-      return `Скоро истекает · ${daysText(daysRemaining)}`;
-    return `Свежий · ещё ${daysText(daysRemaining)}`;
+      return `Скоро истекает · ${remainingText(daysRemaining)}`;
+    return `Свежий · ещё ${remainingText(daysRemaining)}`;
   })();
 
   const saveNotes = () => {

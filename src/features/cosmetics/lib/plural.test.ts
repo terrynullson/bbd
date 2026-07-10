@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { daysText, plural } from './plural';
+import { daysLeftLine, daysText, plural, remainingText } from './plural';
 
 const DAYS: [string, string, string] = ['день', 'дня', 'дней'];
 
@@ -31,5 +31,32 @@ describe('plural', () => {
   it('daysText собирает число со словом', () => {
     expect(daysText(1)).toBe('1 день');
     expect(daysText(366)).toBe('366 дней');
+  });
+});
+
+describe('remainingText', () => {
+  it('ноль дней — «сегодня»', () => {
+    expect(remainingText(0)).toBe('сегодня');
+  });
+
+  it('положительное — число со склонением', () => {
+    expect(remainingText(1)).toBe('1 день');
+    expect(remainingText(10)).toBe('10 дней');
+  });
+});
+
+describe('daysLeftLine', () => {
+  it('сегодня', () => {
+    expect(daysLeftLine(0)).toBe('истекает сегодня');
+  });
+
+  it('впереди', () => {
+    expect(daysLeftLine(1)).toBe('осталось 1 день');
+    expect(daysLeftLine(365)).toBe('осталось 365 дней');
+  });
+
+  it('просрочка по модулю', () => {
+    expect(daysLeftLine(-1)).toBe('просрочен 1 день назад');
+    expect(daysLeftLine(-5)).toBe('просрочен 5 дней назад');
   });
 });

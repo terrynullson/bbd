@@ -89,9 +89,23 @@ export function resolveExpiry(params: ExpiryParams) {
   };
 }
 
+/**
+ * Дни до срока для статуса: годен по конец дня EXP, поэтому «истекает сегодня»
+ * даёт 1, а не 0. На этом держится граница `days <= 0 → просрочен`.
+ */
 export function getDaysUntil(end: Date | null): number | null {
   if (!end) return null;
   return Math.ceil((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Календарная разница дат для показа пользователю: сегодня → 0, завтра → 1.
+ * На конец дня EXP это ровно `getDaysUntil − 1`.
+ */
+export function getCalendarDaysUntil(end: Date | null): number | null {
+  if (!end) return null;
+  const dayMs = 1000 * 60 * 60 * 24;
+  return Math.round((startOfDay(end).getTime() - startOfDay(new Date()).getTime()) / dayMs);
 }
 
 export function expiryParamsFromItem(item: ExpiryParams): ExpiryParams {

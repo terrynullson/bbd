@@ -86,12 +86,22 @@ describe('calculateStatus', () => {
 });
 
 describe('getDaysRemaining', () => {
-  // Срок действует до конца дня EXP, поэтому сегодняшний день входит в остаток:
-  // дата «через 10 дней» показывается как 11. Поведение зафиксировано намеренно —
-  // менять только вместе с текстами на полке и в карточке.
-  it('день EXP входит в остаток', () => {
-    expect(getDaysRemaining(params({ expiresAt: shift(10) }))).toBe(11);
-    expect(getDaysRemaining(params({ expiresAt: shift(0) }))).toBe(1);
+  // Показываем календарную разницу дат: сегодня → 0, завтра → 1.
+  it('считает календарные дни до срока', () => {
+    expect(getDaysRemaining(params({ expiresAt: shift(10) }))).toBe(10);
+  });
+
+  it('истекающее сегодня — ноль, а не единица', () => {
+    expect(getDaysRemaining(params({ expiresAt: shift(0) }))).toBe(0);
+  });
+
+  it('12-месячный PAO, вскрытый сегодня, — 365, а не 366', () => {
+    expect(getDaysRemaining(params({ openedAt: shift(0), paoMonths: 12 }))).toBe(365);
+  });
+
+  it('просрочка календарная: истёкшее вчера — минус один', () => {
+    expect(getDaysRemaining(params({ expiresAt: shift(-1) }))).toBe(-1);
+    expect(getDaysRemaining(params({ expiresAt: shift(-5) }))).toBe(-5);
   });
 
   it('просроченное отдаёт неположительное число', () => {
