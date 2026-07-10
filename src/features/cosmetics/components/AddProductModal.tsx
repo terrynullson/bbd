@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/Button';
 import { FieldLabel } from '@/components/ui/FieldLabel';
 import { BarcodeScanner } from './BarcodeScanner';
 import { PaoPicker } from './PaoPicker';
-import { PackagingToggle } from './PackagingToggle';
+import { OpeningQuestion } from './OpeningQuestion';
 import { ProductIdentitySection } from './ProductIdentitySection';
+import { Chip } from './AddFormControls';
+import { CATEGORY_ORDER, getCategoryTitle } from '../lib/categories';
 import { upsertCatalogProduct } from '../api/catalog-product';
 import { useAddProductForm } from '../hooks/useAddProductForm';
 import { useBarcodeLookup } from '../hooks/useBarcodeLookup';
-import { todayIso } from '../lib/date-input';
 import { useAuth } from '@/lib/supabase/use-auth';
 import { haptic } from '@/lib/haptics';
 import type {
@@ -153,60 +154,59 @@ export function AddProductModal({
               onClearNameError={() => setNameError('')}
             />
 
-            <section className="rounded-card border border-border bg-surface p-3">
-              <PackagingToggle
-                isOpen={!form.isSealed}
-                onChange={(isOpen) => {
-                  form.setIsSealed(!isOpen);
-                  if (isOpen) form.setOpenedAt(todayIso());
-                }}
-              />
+            <div>
+              <FieldLabel>Категория</FieldLabel>
+              <div className="flex flex-wrap gap-2">
+                {CATEGORY_ORDER.map((id) => (
+                  <Chip
+                    key={id}
+                    active={form.effectiveCategory === id}
+                    onClick={() => form.setCategory(id)}
+                  >
+                    {getCategoryTitle(id)}
+                  </Chip>
+                ))}
+              </div>
+            </div>
 
-              {!form.isSealed ? (
-                <div className="mt-3 space-y-3 border-t border-border/40 pt-3">
-                  <div>
-                    <FieldLabel>Дата вскрытия</FieldLabel>
-                    <Input
-                      type="date"
-                      value={form.openedAt}
-                      max={todayIso()}
-                      onChange={(event) => form.setOpenedAt(event.target.value)}
-                    />
-                  </div>
+            <section className="flex flex-col gap-3 rounded-card border border-border bg-surface p-3">
+              <div>
+                <FieldLabel>Когда вскрыли?</FieldLabel>
+                <OpeningQuestion
+                  value={{ openedAt: form.openedAt, isSealed: form.isSealed }}
+                  onChange={(next) => {
+                    form.setIsSealed(next.isSealed);
+                    form.setOpenedAt(next.openedAt);
+                  }}
+                />
+              </div>
 
-                  <div>
-                    <FieldLabel>Срок после вскрытия (PAO)</FieldLabel>
-                    <PaoPicker
-                      value={form.paoMonths}
-                      isEstimate={
-                        form.paoSource === 'preset' ||
-                        form.paoSource === 'ai_estimate'
-                      }
-                      onChange={form.setPaoMonths}
-                    />
-                  </div>
-
-                  <div>
-                    <FieldLabel>Годен до (опционально)</FieldLabel>
-                    <Input
-                      type="date"
-                      value={form.expiresAt}
-                      onChange={(event) => form.setExpiresAt(event.target.value)}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-3 border-t border-border/40 pt-3">
-                  <FieldLabel>Годен до</FieldLabel>
-                  <Input
-                    type="date"
-                    value={form.expiresAt}
-                    onChange={(event) => form.setExpiresAt(event.target.value)}
+              {!form.isSealed && (
+                <div>
+                  <FieldLabel>Срок после вскрытия (PAO)</FieldLabel>
+                  <PaoPicker
+                    value={form.paoMonths}
+                    isEstimate={
+                      form.paoSource === 'preset' ||
+                      form.paoSource === 'ai_estimate'
+                    }
+                    onChange={form.setPaoMonths}
                   />
                 </div>
               )}
 
-              <p className="mt-3 text-xs leading-relaxed text-muted">
+              <div>
+                <FieldLabel>
+                  {form.isSealed ? 'Годен до (с упаковки)' : 'Годен до (опционально)'}
+                </FieldLabel>
+                <Input
+                  type="date"
+                  value={form.expiresAt}
+                  onChange={(event) => form.setExpiresAt(event.target.value)}
+                />
+              </div>
+
+              <p className="text-xs leading-relaxed text-muted">
                 {getDatesHint(form.isSealed, form.paoSource)}
               </p>
             </section>

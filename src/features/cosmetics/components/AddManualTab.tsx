@@ -4,13 +4,10 @@ import { useState } from 'react';
 import { FieldLabel } from '@/components/ui/FieldLabel';
 import { SuggestionDropdown } from './SuggestionDropdown';
 import { PaoPicker } from './PaoPicker';
-import { Chip, ghostButtonClass, inputClass, primaryButtonClass } from './AddFormControls';
+import { OpeningQuestion } from './OpeningQuestion';
+import { ghostButtonClass, inputClass, primaryButtonClass } from './AddFormControls';
 import { useSuggestions } from '../hooks/useSuggestions';
-import {
-  CATEGORY_ORDER,
-  getCategoryTitle,
-  inferCategoryFromText,
-} from '../lib/categories';
+import { inferCategoryFromText } from '../lib/categories';
 import { todayIso } from '../lib/date-input';
 import { getDefaultPaoMonths, inferTaxonomy } from '../lib/taxonomy';
 import { cn } from '@/lib/utils';
@@ -50,10 +47,13 @@ export function AddManualTab({
     initialDraft?.paoMonths ?? null,
   );
   const [openedAt, setOpenedAt] = useState(todayIso());
+  const [isSealed, setIsSealed] = useState(initialDraft?.isSealed ?? false);
+  const [expiresAt, setExpiresAt] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [error, setError] = useState('');
 
-  // Категория и PAO выводятся из названия, пока их не выбрали руками.
+  // Категория выводится из названия и в быстром вводе не показывается —
+  // её правят в полной форме. PAO — пока не выбрали руками.
   const category =
     pickedCategory ??
     (name.trim().length >= 3 ? inferCategoryFromText(name) : 'cream');
@@ -82,6 +82,11 @@ export function AddManualTab({
       haptic('error');
       return;
     }
+    if (isSealed && !expiresAt) {
+      setError('Для неоткрытого укажите «Годен до» с упаковки');
+      haptic('error');
+      return;
+    }
 
     const taxonomy = inferTaxonomy(category, trimmed);
     haptic('medium');
@@ -90,7 +95,9 @@ export function AddManualTab({
       brand: UNKNOWN_BRAND,
       paoMonths,
       openedAt: new Date(openedAt).toISOString(),
-      isSealed: false,
+      expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
+      expirySource: expiresAt ? 'user' : undefined,
+      isSealed,
       category,
       productGroup: taxonomy.group,
       productSubtype: taxonomy.subtype,
@@ -108,7 +115,8 @@ export function AddManualTab({
       category: pickedCategory ?? undefined,
       paoMonths: pickedPao ?? undefined,
       openedAt: new Date(openedAt).toISOString(),
-      isSealed: false,
+      expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
+      isSealed,
       lookupSource: 'manual',
     });
   };
@@ -145,41 +153,41 @@ export function AddManualTab({
       </div>
 
       <div>
-        <FieldLabel>Категория</FieldLabel>
-        <div className="flex flex-wrap gap-2">
-          {CATEGORY_ORDER.map((id) => (
-            <Chip
-              key={id}
-              active={category === id}
-              onClick={() => {
-                setPickedCategory(id);
-                setPickedPao(null);
-              }}
-            >
-              {getCategoryTitle(id)}
-            </Chip>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <FieldLabel>Дата вскрытия</FieldLabel>
-        <input
-          type="date"
-          aria-label="Дата вскрытия"
-          value={openedAt}
-          max={todayIso()}
-          onChange={(event) => setOpenedAt(event.target.value)}
-          className={inputClass}
+        <FieldLabel>Когда вскрыли?</FieldLabel>
+        <OpeningQuestion
+          value={{ openedAt, isSealed }}
+          onChange={(next) => {
+            setOpenedAt(next.openedAt);
+            setIsSealed(next.isSealed);
+            if (error) setError('');
+          }}
         />
       </div>
 
+      {!isSealed && (
+        <div>
+          <FieldLabel>Срок после вскрытия</FieldLabel>
+          <PaoPicker
+            value={paoMonths}
+            isEstimate={pickedPao === null}
+            onChange={setPickedPao}
+          />
+        </div>
+      )}
+
       <div>
-        <FieldLabel>Срок после вскрытия</FieldLabel>
-        <PaoPicker
-          value={paoMonths}
-          isEstimate={pickedPao === null}
-          onChange={setPickedPao}
+        <FieldLabel>
+          {isSealed ? 'Годен до (с упаковки)' : 'Годен до (опционально)'}
+        </FieldLabel>
+        <input
+          type="date"
+          aria-label="Годен до"
+          value={expiresAt}
+          onChange={(event) => {
+            setExpiresAt(event.target.value);
+            if (error) setError('');
+          }}
+          className={inputClass}
         />
       </div>
 
@@ -194,7 +202,7 @@ export function AddManualTab({
       </button>
 
       <button type="button" onClick={openFullForm} className={ghostButtonClass}>
-        Полная форма — бренд, фото, срок с упаковки
+        Полная форма — бренд, фото, категория
       </button>
     </div>
   );

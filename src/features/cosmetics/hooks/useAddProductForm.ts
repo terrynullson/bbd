@@ -223,6 +223,8 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
     expiresAt,
     setExpiresAt,
     category,
+    // Категория, которая реально уйдёт на сохранение (выведенная, если не тронута).
+    effectiveCategory,
     setCategory,
     imageUrl,
     setImageUrl,
