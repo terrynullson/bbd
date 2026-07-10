@@ -63,7 +63,7 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
   const effectiveCategory =
     category === 'other' ? inferCategoryFromText(`${brand} ${name}`) : category;
   const taxonomy = inferTaxonomy(effectiveCategory, `${brand} ${name}`);
-  const presetPaoMonths = getDefaultPaoMonths(taxonomy.subtype);
+  const presetPaoMonths = getDefaultPaoMonths(taxonomy.subtype, effectiveCategory);
 
   const isPresetPao = picked === null || picked.source === 'preset';
   const paoMonths = isPresetPao ? presetPaoMonths : picked.months;

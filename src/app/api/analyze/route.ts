@@ -15,11 +15,17 @@ const BBD_AI_BASE_URL =
 const BBD_AI_MODEL = process.env.BBD_AI_MODEL || 'deepseek-chat';
 
 const VALID_CATEGORIES = new Set<ProductCategory>([
-  'cream',
-  'serum',
-  'toner',
   'cleanser',
+  'toner',
+  'serum',
+  'cream',
   'mask',
+  'suncare',
+  'makeup',
+  'hair',
+  'body',
+  'fragrance',
+  'nails',
   'other',
 ]);
 
@@ -120,7 +126,7 @@ export async function POST(request: NextRequest) {
 Твоя задача — НОРМАЛИЗОВАТЬ и ДОПОЛНИТЬ данные. Не копируй ввод дословно, если его можно улучшить.
 
 Верни СТРОГО валидный JSON:
-{"brand":"string","name":"string","paoMonths":number,"category":"cream|serum|toner|cleanser|mask|other"}
+{"brand":"string","name":"string","paoMonths":number,"category":"cleanser|toner|serum|cream|mask|suncare|makeup|hair|body|fragrance|nails|other"}
 
 Правила:
 1. brand — каноническое написание бренда (примеры: "Гучи"→"Gucci", "цераве"→"CeraVe", "manyo"→"Manyo").

@@ -27,7 +27,7 @@ function monthsText(months: number) {
 }
 
 function presetPao(category: AddProductInput['category'], text: string) {
-  return getDefaultPaoMonths(inferTaxonomy(category, text).subtype);
+  return getDefaultPaoMonths(inferTaxonomy(category, text).subtype, category);
 }
 
 export function AddScanTab({ onSubmit, onOpenFullForm }: AddScanTabProps) {

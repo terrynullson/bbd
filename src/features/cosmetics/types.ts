@@ -26,21 +26,36 @@ export type ProductSubtype =
   | 'toner'
   | 'cleanser'
   | 'mask'
+  | 'sunscreen'
   | 'lipstick'
   | 'foundation'
+  | 'mascara'
   | 'shampoo'
   | 'conditioner'
   | 'body_lotion'
+  | 'hand_cream'
+  | 'deodorant'
   | 'perfume'
   | 'nail_polish'
   | 'other';
 
+/**
+ * Пользовательская категория. Старые slug'и (cream/serum/toner/cleanser/mask)
+ * сохранены — данные в Supabase и выводы ИИ остаются валидными; `cream`
+ * переклеен в ярлык «Увлажнение». Новые добавлены к ним, не вместо.
+ */
 export type ProductCategory =
-  | 'cream'
-  | 'serum'
-  | 'toner'
   | 'cleanser'
+  | 'toner'
+  | 'serum'
+  | 'cream'
   | 'mask'
+  | 'suncare'
+  | 'makeup'
+  | 'hair'
+  | 'body'
+  | 'fragrance'
+  | 'nails'
   | 'other';
 
 export interface CosmeticItem {

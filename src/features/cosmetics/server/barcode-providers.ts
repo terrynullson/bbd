@@ -1,4 +1,5 @@
 import { inferCategoryFromText } from '../lib/categories';
+import { normalizeCategory } from '../lib/taxonomy';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import type { LookupProductResponse } from '../types';
 
@@ -92,7 +93,9 @@ const catalogProvider: BarcodeProvider = {
       brand: data.brand,
       name: data.name,
       paoMonths: data.default_pao_months ?? undefined,
-      category: data.category ?? inferCategoryFromText(`${data.brand} ${data.name}`),
+      category: data.category
+        ? normalizeCategory(data.category)
+        : inferCategoryFromText(`${data.brand} ${data.name}`),
       imageUrl: data.image_url ?? undefined,
       source: 'catalog',
     };

@@ -1,5 +1,6 @@
 import { STORAGE_KEY, STORAGE_SCHEMA_VERSION } from '@/lib/constants';
 import { calculateStatus } from './calculate-status';
+import { normalizeCategory } from './taxonomy';
 import type { CosmeticItem, CosmeticsStorageEnvelope } from '../types';
 
 type StoredCosmeticItem = Partial<CosmeticItem> &
@@ -41,7 +42,7 @@ function normalizeItem(item: StoredCosmeticItem): CosmeticItem {
       isSealed,
       expiresAt: item.expiresAt,
     }),
-    category: item.category ?? 'other',
+    category: normalizeCategory(item.category),
     imageUrl: item.imageUrl,
     createdAt,
     updatedAt: item.updatedAt ?? createdAt,

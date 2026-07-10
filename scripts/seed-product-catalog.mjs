@@ -12,15 +12,61 @@ import {
 const BATCH_SIZE = 300;
 const DEFAULT_SOURCE = 'incidecoder';
 
+// Полный маппинг 36 типов из CSV в 12 категорий приложения.
 const TYPE_TO_CATEGORY = {
   Serum: 'serum',
+  'Facial Treatment': 'serum',
+  Oil: 'serum',
   Toner: 'toner',
+  Essence: 'toner',
   'Face Cleanser': 'cleanser',
+  Exfoliator: 'cleanser',
+  'Makeup Remover': 'cleanser',
   'General Moisturizer': 'cream',
   'Day Moisturizer': 'cream',
   'Night Moisturizer': 'cream',
+  'Eye Moisturizer': 'cream',
+  Emulsion: 'cream',
   Mask: 'mask',
-  'Facial Treatment': 'serum',
+  'Wet Mask': 'mask',
+  'Sheet Mask': 'mask',
+  'Overnight Mask': 'mask',
+  'Eye Mask': 'mask',
+  'Lip Mask': 'mask',
+  Sunscreen: 'suncare',
+  Tanning: 'suncare',
+  'Face Makeup': 'makeup',
+  'Eye Makeup': 'makeup',
+  'Lip Makeup': 'makeup',
+  'Cheek Makeup': 'makeup',
+  Shampoo: 'hair',
+  Conditioner: 'hair',
+  'Other Haircare': 'hair',
+  'Bath & Body': 'body',
+  'Hand Care': 'body',
+  'Lip Moisturizer': 'body',
+  Fragrance: 'fragrance',
+  'Nail Care': 'nails',
+  Tool: 'other',
+  'Makeup Applicator': 'other',
+  'False Eyelash': 'other',
+  Other: 'other',
+};
+
+// Категорийный дефолт PAO (в месяцах) — совпадает с CATEGORY_PAO_MONTHS приложения.
+const CATEGORY_PAO_MONTHS = {
+  cleanser: 12,
+  toner: 12,
+  serum: 6,
+  cream: 12,
+  mask: 6,
+  suncare: 12,
+  makeup: 12,
+  hair: 12,
+  body: 12,
+  fragrance: 24,
+  nails: 24,
+  other: 12,
 };
 
 function resolveProductsPath() {
@@ -37,9 +83,15 @@ function inferCategoryFromType(type, text) {
   if (TYPE_TO_CATEGORY[type]) return TYPE_TO_CATEGORY[type];
 
   const lower = text.toLowerCase();
-  if (/сыворотк|serum|ампул|niacinamide/i.test(lower)) return 'serum';
-  if (/тоник|toner|эссенц/i.test(lower)) return 'toner';
-  if (/пенк|гель.*умыв|cleanser|мицелляр/i.test(lower)) return 'cleanser';
+  if (/spf|sunscreen|солнцезащит|санскрин|tanning/i.test(lower)) return 'suncare';
+  if (/perfume|fragrance|eau de|духи|парфюм|одеколон/i.test(lower)) return 'fragrance';
+  if (/nail|ногт|лак/i.test(lower)) return 'nails';
+  if (/mascara|lipstick|foundation|makeup|тушь|помад|тональн/i.test(lower)) return 'makeup';
+  if (/shampoo|conditioner|hair|шампун|кондицион|волос/i.test(lower)) return 'hair';
+  if (/body|deodorant|hand|дезодор|для тела|для рук/i.test(lower)) return 'body';
+  if (/сыворотк|serum|ампул|niacinamide|эссенц/i.test(lower)) return 'serum';
+  if (/тоник|toner/i.test(lower)) return 'toner';
+  if (/пенк|гель.*умыв|cleanser|мицелляр|remover/i.test(lower)) return 'cleanser';
   if (/маск|mask|патч/i.test(lower)) return 'mask';
   if (/крем|лосьон|cream|moistur/i.test(lower)) return 'cream';
 
@@ -77,6 +129,9 @@ function prepareProducts(csvRows, source = DEFAULT_SOURCE) {
 
     const existing = byKey.get(key);
     if (!existing) {
+      // confidence/usage_count намеренно не задаём: при пере-сиде upsert их
+      // не перезапишет (растут от реального использования), новые строки
+      // получат дефолты БД.
       byKey.set(key, {
         barcode: null,
         brand,
@@ -84,9 +139,8 @@ function prepareProducts(csvRows, source = DEFAULT_SOURCE) {
         normalized_brand,
         normalized_name,
         category,
+        default_pao_months: CATEGORY_PAO_MONTHS[category] ?? 12,
         source,
-        confidence: 0.7,
-        usage_count: 0,
       });
     }
   }
@@ -94,33 +148,17 @@ function prepareProducts(csvRows, source = DEFAULT_SOURCE) {
   return [...byKey.values()];
 }
 
+// Upsert по (normalized_brand, normalized_name): пере-сид обновляет
+// category и default_pao_months у существующих строк, а не плодит дубли
+// (прежний insert их просто пропускал, и категории не обновлялись).
 async function insertBatch(supabase, rows) {
-  const { error } = await supabase.from('product_catalog').insert(rows);
+  const { error } = await supabase
+    .from('product_catalog')
+    .upsert(rows, { onConflict: 'normalized_brand,normalized_name' });
 
-  if (!error) {
-    return { inserted: rows.length, skipped: 0 };
-  }
+  if (error) throw error;
 
-  if (error.code !== '23505') {
-    throw error;
-  }
-
-  let inserted = 0;
-  let skipped = 0;
-
-  for (const row of rows) {
-    const { error: rowError } = await supabase.from('product_catalog').insert(row);
-
-    if (rowError?.code === '23505') {
-      skipped += 1;
-      continue;
-    }
-
-    if (rowError) throw rowError;
-    inserted += 1;
-  }
-
-  return { inserted, skipped };
+  return { inserted: rows.length, skipped: 0 };
 }
 
 async function main() {

@@ -33,7 +33,7 @@ type AddManualTabProps = {
 };
 
 function presetPao(category: ProductCategory, text: string) {
-  return getDefaultPaoMonths(inferTaxonomy(category, text).subtype);
+  return getDefaultPaoMonths(inferTaxonomy(category, text).subtype, category);
 }
 
 export function AddManualTab({
