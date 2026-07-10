@@ -1,22 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import { BarcodeScanner } from './BarcodeScanner';
 import { PaoSelector } from './PaoSelector';
 import { PackagingToggle } from './PackagingToggle';
-import {
-  getLookupSourceLabel,
-  ProductSummaryCard,
-} from './ProductSummaryCard';
+import { ProductIdentitySection } from './ProductIdentitySection';
 import { upsertCatalogProduct } from '../api/catalog-product';
-import { lookupProductByBarcode } from '../api/lookup-product';
 import { useAddProductForm } from '../hooks/useAddProductForm';
+import { useBarcodeLookup } from '../hooks/useBarcodeLookup';
+import { todayIso } from '../lib/date-input';
 import { useAuth } from '@/lib/supabase/use-auth';
 import { haptic } from '@/lib/haptics';
-import type { AddProductInput, CosmeticItem, PaoSource } from '../types';
+import type {
+  AddProductInput,
+  CosmeticItem,
+  LookupProductResponse,
+  PaoSource,
+} from '../types';
 
 type AddProductModalProps = {
   onClose: () => void;
@@ -26,14 +30,6 @@ type AddProductModalProps = {
   initialValues?: Partial<AddProductInput>;
   localItems?: CosmeticItem[];
 };
-
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
-      {children}
-    </label>
-  );
-}
 
 function getDatesHint(isSealed: boolean, paoSource?: PaoSource) {
   if (isSealed) {
@@ -61,75 +57,46 @@ export function AddProductModal({
 }: AddProductModalProps) {
   const { user } = useAuth();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [isLookupLoading, setIsLookupLoading] = useState(false);
-  const [lookupError, setLookupError] = useState('');
   const [nameError, setNameError] = useState('');
   const form = useAddProductForm(item ?? initialValues);
   const isEditing = Boolean(item);
-  const lookupSourceLabel = getLookupSourceLabel(form.lookupSource);
 
-  const applyLookupResult = (result: {
-    brand?: string;
-    name?: string;
-    paoMonths?: number;
-    category?: AddProductInput['category'];
-    imageUrl?: string;
-    source?: 'open-beauty-facts' | 'catalog';
-  }) => {
-    if (result.brand) form.setBrand(result.brand);
-    if (result.name) form.setName(result.name);
-    if (result.paoMonths) form.setPaoMonths(result.paoMonths, 'catalog');
-    if (result.category) form.setCategory(result.category);
-    if (result.imageUrl) form.setImageUrl(result.imageUrl);
-    form.setLookupSource(result.source ?? 'barcode');
-  };
+  const handleLookupFound = useCallback(
+    (code: string, result: LookupProductResponse) => {
+      form.setBarcode(code, 'scan', result);
+      if (result.brand) form.setBrand(result.brand);
+      if (result.name) form.setName(result.name);
+      if (result.paoMonths) form.setPaoMonths(result.paoMonths, 'catalog');
+      if (result.category) form.setCategory(result.category);
+      if (result.imageUrl) form.setImageUrl(result.imageUrl);
+      form.setLookupSource(result.source ?? 'barcode');
+    },
+    [form],
+  );
+
+  const barcodeLookup = useBarcodeLookup({ onFound: handleLookupFound });
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!form.name.trim()) {
+    const input = form.buildInput();
+    if (!input) {
       setNameError('Укажите название продукта');
       haptic('error');
       return;
     }
 
     setNameError('');
-    const input = form.buildInput();
-    if (!input) return;
-
     onSubmit(input);
     void upsertCatalogProduct(input);
     if (!isEditing) form.reset();
     onClose();
   };
 
-  const handleBarcodeScan = async (code: string) => {
+  const handleBarcodeScan = (code: string) => {
     form.setBarcode(code, 'scan');
     setIsScannerOpen(false);
-    setLookupError('');
-    setIsLookupLoading(true);
-
-    try {
-      const result = await lookupProductByBarcode(code);
-
-      if (result.found && result.name) {
-        form.setBarcode(code, 'scan', result);
-        applyLookupResult(result);
-        return;
-      }
-
-      setLookupError(
-        'Штрих-код не найден. Заполните остальные поля вручную.',
-      );
-    } catch (error) {
-      setLookupError(
-        error instanceof Error
-          ? error.message
-          : 'Не удалось проверить штрих-код',
-      );
-    } finally {
-      setIsLookupLoading(false);
-    }
+    void barcodeLookup.lookup(code);
   };
 
   const handleBackToSearch = () => {
@@ -153,8 +120,6 @@ export function AddProductModal({
     });
   };
 
-  const paoHint = getDatesHint(form.isSealed, form.paoSource);
-
   return (
     <>
       <Modal
@@ -174,29 +139,26 @@ export function AddProductModal({
       >
         <form onSubmit={handleSubmit} noValidate className="flex flex-col">
           <div className="flex flex-col gap-4 pb-4">
-            <ProductSummaryCard
+            <ProductIdentitySection
               form={form}
               localItems={localItems}
               isEditing={isEditing}
               initialValues={initialValues}
-              lookupSourceLabel={lookupSourceLabel}
               onOpenScanner={() => setIsScannerOpen(true)}
-              isLookupLoading={isLookupLoading}
-              lookupError={lookupError}
-              onLookupErrorClear={() => setLookupError('')}
+              isLookupLoading={barcodeLookup.isLoading}
+              lookupError={barcodeLookup.error}
+              onLookupErrorClear={barcodeLookup.clearError}
               userId={user?.id}
               nameError={nameError}
               onClearNameError={() => setNameError('')}
             />
 
-            <section className="rounded-[14px] border border-border/60 bg-bg/30 p-3">
+            <section className="rounded-card border border-border bg-surface p-3">
               <PackagingToggle
                 isOpen={!form.isSealed}
                 onChange={(isOpen) => {
                   form.setIsSealed(!isOpen);
-                  if (isOpen) {
-                    form.setOpenedAt(new Date().toISOString().slice(0, 10));
-                  }
+                  if (isOpen) form.setOpenedAt(todayIso());
                 }}
               />
 
@@ -207,8 +169,8 @@ export function AddProductModal({
                     <Input
                       type="date"
                       value={form.openedAt}
-                      max={new Date().toISOString().slice(0, 10)}
-                      onChange={(e) => form.setOpenedAt(e.target.value)}
+                      max={todayIso()}
+                      onChange={(event) => form.setOpenedAt(event.target.value)}
                     />
                   </div>
 
@@ -225,7 +187,7 @@ export function AddProductModal({
                     <Input
                       type="date"
                       value={form.expiresAt}
-                      onChange={(e) => form.setExpiresAt(e.target.value)}
+                      onChange={(event) => form.setExpiresAt(event.target.value)}
                     />
                   </div>
                 </div>
@@ -235,19 +197,19 @@ export function AddProductModal({
                   <Input
                     type="date"
                     value={form.expiresAt}
-                    onChange={(e) => form.setExpiresAt(e.target.value)}
+                    onChange={(event) => form.setExpiresAt(event.target.value)}
                   />
                 </div>
               )}
 
               <p className="mt-3 text-xs leading-relaxed text-muted">
-                {paoHint}
+                {getDatesHint(form.isSealed, form.paoSource)}
               </p>
             </section>
           </div>
 
           <div className="sticky bottom-0 -mx-5 border-t border-border/60 bg-surface px-5 pb-5 pt-3">
-            <Button type="submit" size="lg" className="h-12 w-full rounded-[14px]">
+            <Button type="submit" size="lg" className="h-12 w-full">
               {isEditing ? 'Сохранить изменения' : 'Сохранить'}
             </Button>
           </div>
@@ -257,7 +219,7 @@ export function AddProductModal({
       {isScannerOpen && (
         <BarcodeScanner
           onClose={() => setIsScannerOpen(false)}
-          onScanSuccess={(code) => void handleBarcodeScan(code)}
+          onScanSuccess={handleBarcodeScan}
         />
       )}
     </>

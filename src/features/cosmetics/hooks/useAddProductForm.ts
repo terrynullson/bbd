@@ -1,9 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useOnlineStatus } from './useOnlineStatus';
 import { analyzeProduct } from '../api/analyze-product';
 import { assessBarcodeTrust } from '../lib/barcode';
 import { inferCategoryFromText } from '../lib/categories';
+import { toDateInputValue, todayIso } from '../lib/date-input';
 import { isUnknownBrand } from '../lib/analyze-context';
 import { getDefaultPaoMonths, inferTaxonomy } from '../lib/taxonomy';
 import type {
@@ -13,89 +15,59 @@ import type {
   ProductCategory,
 } from '../types';
 
-const DEFAULT_FORM = {
-  name: '',
-  brand: '',
-  barcode: '',
-  paoMonths: 12,
-  openedAt: new Date().toISOString().slice(0, 10),
-  expiresAt: '',
-  category: 'other' as ProductCategory,
-  imageUrl: '',
-  notes: '',
-  lookupSource: 'manual' as AddProductInput['lookupSource'],
-  paoSource: undefined as PaoSource | undefined,
-  barcodeSource: undefined as AddProductInput['barcodeSource'],
-  isSealed: true,
-};
+const UNKNOWN_BRAND = 'Неизвестный бренд';
 
-function toDateInputValue(value?: string) {
-  if (!value) return new Date().toISOString().slice(0, 10);
-  return new Date(value).toISOString().slice(0, 10);
+/** Выбранный вручную (или подсказанный) PAO. `null` — берём пресет по категории. */
+type PickedPao = { months: number; source: PaoSource } | null;
+
+function initialPao(values?: Partial<AddProductInput>): PickedPao {
+  if (values?.paoMonths === undefined) return null;
+  return { months: values.paoMonths, source: values.paoSource ?? 'user' };
 }
 
+/**
+ * Состояние формы добавления/редактирования.
+ *
+ * Компонент, использующий хук, должен пересоздаваться при смене товара
+ * (`key` на месте вызова) — форма не синхронизируется с пропсами эффектом.
+ */
 export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
-  const [name, setName] = useState(DEFAULT_FORM.name);
-  const [brand, setBrand] = useState(DEFAULT_FORM.brand);
-  const [barcode, setBarcodeState] = useState(DEFAULT_FORM.barcode);
-  const [barcodeSource, setBarcodeSource] = useState(DEFAULT_FORM.barcodeSource);
-  const [barcodeLookup, setBarcodeLookup] = useState<LookupProductResponse>();
-  const [paoMonths, setPaoMonthsState] = useState(DEFAULT_FORM.paoMonths);
-  const [paoSource, setPaoSource] = useState<PaoSource | undefined>(
-    DEFAULT_FORM.paoSource,
+  const [name, setName] = useState(initialValues?.name ?? '');
+  const [brand, setBrand] = useState(initialValues?.brand ?? '');
+  const [barcode, setBarcodeState] = useState(initialValues?.barcode ?? '');
+  const [barcodeSource, setBarcodeSource] = useState(
+    initialValues?.barcodeSource,
   );
-  const [openedAt, setOpenedAt] = useState(DEFAULT_FORM.openedAt);
-  const [expiresAt, setExpiresAt] = useState(DEFAULT_FORM.expiresAt);
-  const [category, setCategory] = useState<ProductCategory>(DEFAULT_FORM.category);
-  const [imageUrl, setImageUrl] = useState(DEFAULT_FORM.imageUrl);
-  const [notes, setNotes] = useState(DEFAULT_FORM.notes);
-  const [lookupSource, setLookupSource] = useState(DEFAULT_FORM.lookupSource);
-  const [isSealed, setIsSealed] = useState(DEFAULT_FORM.isSealed);
+  const [barcodeLookup, setBarcodeLookup] = useState<LookupProductResponse>();
+  const [picked, setPicked] = useState<PickedPao>(() => initialPao(initialValues));
+  const [openedAt, setOpenedAt] = useState(() =>
+    toDateInputValue(initialValues?.openedAt),
+  );
+  const [expiresAt, setExpiresAt] = useState(() =>
+    initialValues?.expiresAt ? toDateInputValue(initialValues.expiresAt) : '',
+  );
+  const [category, setCategory] = useState<ProductCategory>(
+    initialValues?.category ?? 'other',
+  );
+  const [imageUrl, setImageUrl] = useState(initialValues?.imageUrl ?? '');
+  const [notes, setNotes] = useState(initialValues?.notes ?? '');
+  const [lookupSource, setLookupSource] = useState<
+    AddProductInput['lookupSource']
+  >(initialValues?.lookupSource ?? 'manual');
+  const [isSealed, setIsSealed] = useState(initialValues?.isSealed ?? true);
   const [isSmartLoading, setIsSmartLoading] = useState(false);
   const [smartError, setSmartError] = useState('');
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator === 'undefined' ? true : navigator.onLine,
-  );
+  const isOnline = useOnlineStatus();
 
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  // Категория «other» — повод угадать её по тексту, а не хранить угадку в state.
+  const effectiveCategory =
+    category === 'other' ? inferCategoryFromText(`${brand} ${name}`) : category;
+  const taxonomy = inferTaxonomy(effectiveCategory, `${brand} ${name}`);
+  const presetPaoMonths = getDefaultPaoMonths(taxonomy.subtype);
 
-  const applyValues = useCallback((values?: Partial<AddProductInput>) => {
-    setName(values?.name ?? DEFAULT_FORM.name);
-    setBrand(values?.brand ?? DEFAULT_FORM.brand);
-    setBarcodeState(values?.barcode ?? DEFAULT_FORM.barcode);
-    setBarcodeSource(values?.barcodeSource ?? DEFAULT_FORM.barcodeSource);
-    setBarcodeLookup(undefined);
-    setPaoMonthsState(values?.paoMonths ?? DEFAULT_FORM.paoMonths);
-    setPaoSource(
-      values?.paoSource ??
-        (values?.paoMonths === undefined ? DEFAULT_FORM.paoSource : 'user'),
-    );
-    setOpenedAt(toDateInputValue(values?.openedAt));
-    setExpiresAt(values?.expiresAt ? toDateInputValue(values.expiresAt) : '');
-    setCategory(values?.category ?? DEFAULT_FORM.category);
-    setImageUrl(values?.imageUrl ?? DEFAULT_FORM.imageUrl);
-    setNotes(values?.notes ?? DEFAULT_FORM.notes);
-    setLookupSource(values?.lookupSource ?? DEFAULT_FORM.lookupSource);
-    setIsSealed(values?.isSealed ?? DEFAULT_FORM.isSealed);
-    setSmartError('');
-  }, []);
-
-  useEffect(() => {
-    applyValues(initialValues);
-  }, [applyValues, initialValues]);
-
-  const reset = useCallback(() => {
-    applyValues();
-  }, [applyValues]);
+  const isPresetPao = picked === null || picked.source === 'preset';
+  const paoMonths = isPresetPao ? presetPaoMonths : picked.months;
+  const paoSource: PaoSource = isPresetPao ? 'preset' : picked.source;
 
   const setBarcode = useCallback(
     (
@@ -110,52 +82,53 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
     [],
   );
 
-  const setPaoMonths = useCallback((value: number, source: PaoSource = 'user') => {
-    setPaoMonthsState(value);
-    setPaoSource(source);
+  const setPaoMonths = useCallback(
+    (value: number, source: PaoSource = 'user') => {
+      setPicked({ months: value, source });
+    },
+    [],
+  );
+
+  const reset = useCallback(() => {
+    setName('');
+    setBrand('');
+    setBarcodeState('');
+    setBarcodeSource(undefined);
+    setBarcodeLookup(undefined);
+    setPicked(null);
+    setOpenedAt(todayIso());
+    setExpiresAt('');
+    setCategory('other');
+    setImageUrl('');
+    setNotes('');
+    setLookupSource('manual');
+    setIsSealed(true);
+    setSmartError('');
   }, []);
-
-  useEffect(() => {
-    if (paoSource && paoSource !== 'preset') return;
-
-    const inferredCategory = category === 'other'
-      ? inferCategoryFromText(`${brand} ${name}`)
-      : category;
-    const taxonomy = inferTaxonomy(inferredCategory, `${brand} ${name}`);
-    const defaultPaoMonths = getDefaultPaoMonths(taxonomy.subtype);
-
-    setPaoMonthsState((current) =>
-      current === defaultPaoMonths ? current : defaultPaoMonths,
-    );
-    setPaoSource('preset');
-  }, [brand, category, name, paoSource]);
 
   const buildInput = useCallback((): AddProductInput | null => {
     const trimmedName = name.trim();
     if (!trimmedName) return null;
+
     const trimmedBarcode = barcode.trim();
-    const effectiveCategory =
-      category === 'other'
-        ? inferCategoryFromText(`${brand} ${trimmedName}`)
-        : category;
-    const taxonomy = inferTaxonomy(effectiveCategory, `${brand} ${trimmedName}`);
     const effectiveBarcodeSource = trimmedBarcode
       ? (barcodeSource ?? 'manual')
       : undefined;
 
     return {
       name: trimmedName,
-      brand: brand.trim() || 'Неизвестный бренд',
+      brand: brand.trim() || UNKNOWN_BRAND,
       barcode: trimmedBarcode || undefined,
       barcodeSource: effectiveBarcodeSource,
-      barcodeTrust: trimmedBarcode && effectiveBarcodeSource
-        ? assessBarcodeTrust({
-            barcode: trimmedBarcode,
-            source: effectiveBarcodeSource,
-            lookup: barcodeLookup,
-            savedName: trimmedName,
-          })
-        : undefined,
+      barcodeTrust:
+        trimmedBarcode && effectiveBarcodeSource
+          ? assessBarcodeTrust({
+              barcode: trimmedBarcode,
+              source: effectiveBarcodeSource,
+              lookup: barcodeLookup,
+              savedName: trimmedName,
+            })
+          : undefined,
       paoMonths,
       paoSource,
       openedAt: new Date(openedAt).toISOString(),
@@ -180,7 +153,8 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
     openedAt,
     expiresAt,
     isSealed,
-    category,
+    effectiveCategory,
+    taxonomy,
     imageUrl,
     notes,
     lookupSource,
@@ -244,7 +218,6 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
     paoMonths,
     setPaoMonths,
     paoSource,
-    setPaoSource,
     openedAt,
     setOpenedAt,
     expiresAt,
@@ -270,3 +243,5 @@ export function useAddProductForm(initialValues?: Partial<AddProductInput>) {
     smartFillOfflineMessage: !isOnline ? 'Нужен интернет для подбора' : '',
   };
 }
+
+export type AddProductFormState = ReturnType<typeof useAddProductForm>;

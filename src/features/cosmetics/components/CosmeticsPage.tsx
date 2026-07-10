@@ -247,6 +247,8 @@ export function CosmeticsPage() {
 
       {isModalOpen && (
         <AddProductModal
+          // Форма читает начальные значения один раз — при смене товара нужен свежий монтаж.
+          key={editingItem?.id ?? 'new'}
           item={editingItem}
           initialValues={manualInitial}
           localItems={items}
