@@ -19,8 +19,7 @@ type ProfileSheetProps = {
   error: string;
   syncStatus: 'local' | 'syncing' | 'synced' | 'offline' | 'error';
   syncError: string;
-  isSaving: boolean;
-  lastSavedAt: string | null;
+  isStorageReady: boolean;
   isSignedIn: boolean;
   onRetrySync: () => void;
 };
@@ -112,8 +111,7 @@ export function ProfileSheet({
   error,
   syncStatus,
   syncError,
-  isSaving,
-  lastSavedAt,
+  isStorageReady,
   isSignedIn,
   onRetrySync,
 }: ProfileSheetProps) {
@@ -127,8 +125,7 @@ export function ProfileSheet({
     syncStatus,
     syncError,
     isSignedIn,
-    isSaving,
-    lastSavedAt,
+    isStorageReady,
   });
   const showSyncRetry = shouldShowSyncRetry(syncError, isOnline, isSignedIn);
 

@@ -1,16 +1,17 @@
 'use client';
 
 import { X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { SHELF_TIP_DISMISS_KEY } from '@/lib/constants';
 
-export function ShelfTip() {
-  const [visible, setVisible] = useState(false);
+function isDismissed() {
+  if (typeof window === 'undefined') return true;
+  return localStorage.getItem(SHELF_TIP_DISMISS_KEY) === '1';
+}
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    setVisible(localStorage.getItem(SHELF_TIP_DISMISS_KEY) !== '1');
-  }, []);
+export function ShelfTip() {
+  // Подсказка рендерится только после загрузки полки, то есть всегда на клиенте.
+  const [visible, setVisible] = useState(() => !isDismissed());
 
   if (!visible) return null;
 

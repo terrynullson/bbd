@@ -32,10 +32,9 @@ export function CosmeticsPage() {
     restoreItem,
     finalizeDeletion,
     isLoaded,
-    isSaving,
+    isStorageReady,
     error,
     syncError,
-    lastSavedAt,
     isOnline,
     syncStatus,
     retrySync,
@@ -238,8 +237,7 @@ export function CosmeticsPage() {
           error={error}
           syncStatus={syncStatus}
           syncError={syncError}
-          isSaving={isSaving}
-          lastSavedAt={lastSavedAt}
+          isStorageReady={isStorageReady}
           isSignedIn={isSignedIn}
           onRetrySync={retrySync}
         />
