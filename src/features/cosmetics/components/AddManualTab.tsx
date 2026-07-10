@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { FieldLabel } from '@/components/ui/FieldLabel';
 import { SuggestionDropdown } from './SuggestionDropdown';
+import { PaoPicker } from './PaoPicker';
 import { Chip, ghostButtonClass, inputClass, primaryButtonClass } from './AddFormControls';
 import { useSuggestions } from '../hooks/useSuggestions';
 import {
@@ -12,7 +13,6 @@ import {
 } from '../lib/categories';
 import { todayIso } from '../lib/date-input';
 import { getDefaultPaoMonths, inferTaxonomy } from '../lib/taxonomy';
-import { PAO_OPTIONS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { haptic } from '@/lib/haptics';
 import type {
@@ -176,17 +176,11 @@ export function AddManualTab({
 
       <div>
         <FieldLabel>Срок после вскрытия</FieldLabel>
-        <div className="flex flex-wrap gap-2">
-          {PAO_OPTIONS.map((months) => (
-            <Chip
-              key={months}
-              active={paoMonths === months}
-              onClick={() => setPickedPao(months)}
-            >
-              {months} мес
-            </Chip>
-          ))}
-        </div>
+        <PaoPicker
+          value={paoMonths}
+          isEstimate={pickedPao === null}
+          onChange={setPickedPao}
+        />
       </div>
 
       {error && <p className="text-xs text-expired">{error}</p>}

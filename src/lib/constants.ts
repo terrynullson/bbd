@@ -4,7 +4,11 @@ export const SHELF_TIP_DISMISS_KEY = 'bbd-shelf-tip-dismissed';
 export const THEME_STORAGE_KEY = 'gde-moy-krem-theme';
 export const INSTALL_DISMISS_KEY = 'gde-moy-krem-install-dismissed';
 
-export const PAO_OPTIONS = [3, 6, 12, 18, 24] as const;
+/** Три самых частых PAO на упаковке; всё остальное — через «Другое». */
+export const PAO_PRESETS = [6, 12, 24] as const;
+
+export const PAO_MIN_MONTHS = 1;
+export const PAO_MAX_MONTHS = 60;
 
 export const STATUS_ORDER = {
   expired: 1,

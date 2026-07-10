@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { FieldLabel } from '@/components/ui/FieldLabel';
 import { BarcodeScanner } from './BarcodeScanner';
-import { PaoSelector } from './PaoSelector';
+import { PaoPicker } from './PaoPicker';
 import { PackagingToggle } from './PackagingToggle';
 import { ProductIdentitySection } from './ProductIdentitySection';
 import { upsertCatalogProduct } from '../api/catalog-product';
@@ -176,8 +176,12 @@ export function AddProductModal({
 
                   <div>
                     <FieldLabel>Срок после вскрытия (PAO)</FieldLabel>
-                    <PaoSelector
+                    <PaoPicker
                       value={form.paoMonths}
+                      isEstimate={
+                        form.paoSource === 'preset' ||
+                        form.paoSource === 'ai_estimate'
+                      }
                       onChange={form.setPaoMonths}
                     />
                   </div>
