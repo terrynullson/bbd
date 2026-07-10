@@ -2,8 +2,9 @@ import type { CosmeticItem, ProductSuggestion } from '../types';
 
 const MAX_SUGGESTIONS = 8;
 
+/** Схлопывает и внутренние пробелы: иначе «CeraVe Крем» и «cerave  крем» — разные ключи. */
 export function normalizeQuery(value: string): string {
-  return value.trim().toLowerCase();
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 /** Локальные подсказки идут первыми, дубликаты «бренд + название» отбрасываются. */
