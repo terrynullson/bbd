@@ -5,25 +5,20 @@ type ShelfSectionProps = {
   title: string;
   items: CosmeticItem[];
   onRemove: (id: string) => void;
-  onEdit: (item: CosmeticItem) => void;
+  onOpen: (item: CosmeticItem) => void;
 };
 
 export function ShelfSection({
   title,
   items,
   onRemove,
-  onEdit,
+  onOpen,
 }: ShelfSectionProps) {
   if (items.length === 0) return null;
 
   return (
     <section className="flex flex-col gap-2.5">
-      <div className="flex items-center gap-2">
-        <h2 className="rounded-full border border-border/50 bg-bg/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
-          {title}
-        </h2>
-        <div className="h-px min-w-4 flex-1 bg-border/50" />
-      </div>
+      <h2 className="quiet-label">{title}</h2>
       <div className="flex flex-col gap-2.5">
         {items.map((item, index) => (
           <div
@@ -34,7 +29,7 @@ export function ShelfSection({
             <CosmeticCard
               item={item}
               onRemove={onRemove}
-              onEdit={onEdit}
+              onOpen={onOpen}
             />
           </div>
         ))}

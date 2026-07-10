@@ -9,7 +9,7 @@ type PaoSelectorProps = {
 
 export function PaoSelector({ value, onChange }: PaoSelectorProps) {
   return (
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-5 gap-2">
       {PAO_OPTIONS.map((months) => {
         const selected = value === months;
 

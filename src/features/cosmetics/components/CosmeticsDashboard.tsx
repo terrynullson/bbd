@@ -5,13 +5,13 @@ import type { CosmeticItem } from '../types';
 type CosmeticsDashboardProps = {
   items: CosmeticItem[];
   onRemove: (id: string) => void;
-  onEdit: (item: CosmeticItem) => void;
+  onOpen: (item: CosmeticItem) => void;
 };
 
 export function CosmeticsDashboard({
   items,
   onRemove,
-  onEdit,
+  onOpen,
 }: CosmeticsDashboardProps) {
   const sections = buildShelfSections(items);
 
@@ -23,7 +23,7 @@ export function CosmeticsDashboard({
           title={section.title}
           items={section.items}
           onRemove={onRemove}
-          onEdit={onEdit}
+          onOpen={onOpen}
         />
       ))}
     </div>

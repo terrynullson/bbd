@@ -1,21 +1,23 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { PageHero } from '@/components/layout/PageHero';
 import { BottomNavBar } from '@/components/layout/BottomNavBar';
+import { ShelfHeader } from './ShelfHeader';
 import { AddProductModal } from './AddProductModal';
 import { QuickAddSheet } from './QuickAddSheet';
 import { ProfileSheet } from './ProfileSheet';
+import { ProductDetailSheet } from './ProductDetailSheet';
 import { CosmeticsDashboard } from './CosmeticsDashboard';
 import { EmptyState } from './EmptyState';
 import { ShelfFilters } from './ShelfFilters';
 import { ShelfTip } from './ShelfTip';
 import { InstallPrompt } from './InstallPrompt';
-import { applyShelfFilter, type ShelfFilter } from '../lib/shelf-filters';
-import { summarizeStatuses } from '../lib/sort-items';
+import {
+  applyShelfFilter,
+  countShelfFilters,
+  type ShelfFilter,
+} from '../lib/shelf-filters';
 import { useCosmetics } from '../hooks/useCosmetics';
-import { useDesignStyle } from '@/components/theme/style-provider';
-import { cn } from '@/lib/utils';
 import { haptic } from '@/lib/haptics';
 import type { AddProductInput, CosmeticItem } from '../types';
 
@@ -47,11 +49,13 @@ export function CosmeticsPage() {
   const [manualInitial, setManualInitial] = useState<Partial<AddProductInput>>();
   const [quickAddDraft, setQuickAddDraft] = useState<Partial<AddProductInput>>();
   const [deletedItem, setDeletedItem] = useState<CosmeticItem | null>(null);
+  const [detailItem, setDetailItem] = useState<CosmeticItem | null>(null);
   const [shelfFilter, setShelfFilter] = useState<ShelfFilter>('all');
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mainRef = useRef<HTMLElement>(null);
 
-  const isSheetOpen = isQuickAddOpen || isProfileOpen || isModalOpen;
+  const isSheetOpen =
+    isQuickAddOpen || isProfileOpen || isModalOpen || detailItem !== null;
   const isSignedIn = Boolean(user);
 
   const openQuickAdd = (draft?: Partial<AddProductInput>) => {
@@ -69,6 +73,7 @@ export function CosmeticsPage() {
   };
 
   const openEditModal = (item: CosmeticItem) => {
+    setDetailItem(null);
     setEditingItem(item);
     setManualInitial(undefined);
     setQuickAddDraft(undefined);
@@ -114,8 +119,7 @@ export function CosmeticsPage() {
     [items, shelfFilter],
   );
 
-  const { designStyle } = useDesignStyle();
-  const isWarmStyle = designStyle === 'warm';
+  const counts = useMemo(() => countShelfFilters(items), [items]);
 
   if (!isLoaded) {
     return (
@@ -125,17 +129,12 @@ export function CosmeticsPage() {
     );
   }
 
-  const summary = summarizeStatuses(items);
-  const summaryLine =
-    items.length > 0
-      ? `${summary.fresh} свежих · ${summary.expiring} истекают · ${summary.expired} просрочено`
-      : null;
+  const needsAttention = counts.expiring + counts.expired;
+  const userName = user?.email ? user.email.split('@')[0] : null;
 
   const toastPosition = isSheetOpen
     ? 'bottom-[calc(1rem+var(--safe-bottom))]'
-    : isWarmStyle
-      ? 'bottom-[calc(6.25rem+var(--safe-bottom))]'
-      : 'bottom-[calc(4.5rem+var(--safe-bottom))]';
+    : 'bottom-[calc(6.25rem+var(--safe-bottom))]';
 
   const handleShelfPress = () => {
     setActiveTab('shelf');
@@ -149,48 +148,46 @@ export function CosmeticsPage() {
   };
 
   return (
-    <div
-      className={cn(
-        'mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden',
-        isWarmStyle ? 'bg-[var(--hero-overscroll)]' : 'bg-bg',
-      )}
-    >
-      <PageHero summary={summaryLine} compact={items.length > 0} />
-
+    <div className="mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden bg-bg shadow-[0_0_60px_rgba(46,42,36,0.08)]">
       <main
         ref={mainRef}
-        className={cn(
-          'content-enter relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-none px-4',
-          designStyle === 'warm' &&
-            cn(
-              'shelf-sheet z-10 rounded-t-[var(--radius-sheet)] bg-surface pb-[calc(5.25rem+var(--safe-bottom))]',
-              items.length === 0 ? '-mt-12 pt-5' : '-mt-5 pt-5',
-            ),
-          designStyle === 'pulse' &&
-            'z-10 bg-bg pb-[calc(4.75rem+var(--safe-bottom))] pt-4',
-          designStyle === 'riot' &&
-            'riot-shelf z-10 bg-bg pb-[calc(4.5rem+var(--safe-bottom))] pt-3',
-        )}
+        className="content-enter relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-none px-5 pb-[calc(8rem+var(--safe-bottom))] pt-[max(1.75rem,var(--safe-top))]"
       >
+        <ShelfHeader
+          total={items.length}
+          needsAttention={needsAttention}
+          userName={userName}
+        />
+
         {items.length === 0 ? (
           <EmptyState />
         ) : (
           <>
-            <ShelfTip />
-            <div className="mt-2 flex flex-col gap-3">
-              <ShelfFilters value={shelfFilter} onChange={setShelfFilter} />
-              {filteredItems.length > 0 ? (
-                <CosmeticsDashboard
-                  items={filteredItems}
-                  onRemove={handleRemove}
-                  onEdit={openEditModal}
-                />
-              ) : (
-                <p className="rounded-card border border-border/70 bg-bg/80 px-4 py-9 text-center text-sm text-muted">
-                  Нет продуктов по этому фильтру
-                </p>
-              )}
+            <div className="mb-4 mt-5">
+              <ShelfFilters
+                value={shelfFilter}
+                counts={counts}
+                onChange={setShelfFilter}
+              />
             </div>
+
+            <ShelfTip />
+
+            {filteredItems.length > 0 ? (
+              <CosmeticsDashboard
+                items={filteredItems}
+                onRemove={handleRemove}
+                onOpen={setDetailItem}
+              />
+            ) : (
+              <p className="rounded-card border border-border bg-surface px-4 py-9 text-center text-sm text-muted">
+                Нет средств по этому фильтру
+              </p>
+            )}
+
+            <p className="mt-6 text-center text-xs text-muted/70">
+              Свайпните влево, чтобы удалить
+            </p>
           </>
         )}
       </main>
@@ -213,6 +210,20 @@ export function CosmeticsPage() {
             setQuickAddDraft(undefined);
           }}
           onManualFill={(draft) => openManualAdd(draft)}
+          onSubmit={addItem}
+        />
+      )}
+
+      {detailItem && (
+        <ProductDetailSheet
+          item={
+            items.find((candidate) => candidate.id === detailItem.id) ??
+            detailItem
+          }
+          onClose={() => setDetailItem(null)}
+          onRemove={handleRemove}
+          onEdit={openEditModal}
+          onUpdate={updateItem}
         />
       )}
 
@@ -222,6 +233,7 @@ export function CosmeticsPage() {
             setIsProfileOpen(false);
             setActiveTab('shelf');
           }}
+          items={items}
           isOnline={isOnline}
           error={error}
           syncStatus={syncStatus}
@@ -262,14 +274,14 @@ export function CosmeticsPage() {
 
       {deletedItem && (
         <div className={`toast-enter fixed inset-x-0 z-40 px-4 ${toastPosition}`}>
-          <div className="mx-auto flex max-w-lg items-center justify-between gap-3 rounded-[16px] bg-[#2c2420] px-4 py-3 text-sm text-white">
+          <div className="mx-auto flex max-w-lg items-center justify-between gap-3 rounded-full bg-[var(--nav-pill)] px-5 py-3.5 text-sm text-[var(--nav-pill-fg)]">
             <span className="min-w-0 truncate">
               «{deletedItem.name}» удалён
             </span>
             <button
               type="button"
               onClick={handleUndoDelete}
-              className="shrink-0 font-semibold text-[#f0c5b4]"
+              className="shrink-0 font-semibold text-accent"
             >
               Отменить
             </button>

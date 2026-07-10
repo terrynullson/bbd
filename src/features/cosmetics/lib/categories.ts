@@ -13,6 +13,29 @@ export function getCategoryLabel(category: ProductCategory = 'other'): string {
   return CATEGORY_LABELS[category];
 }
 
+const CATEGORY_TITLES: Record<ProductCategory, string> = {
+  cream: 'Крем',
+  serum: 'Сыворотка',
+  toner: 'Тоник',
+  cleanser: 'Очищение',
+  mask: 'Маски',
+  other: 'Другое',
+};
+
+export const CATEGORY_ORDER: ProductCategory[] = [
+  'cream',
+  'serum',
+  'toner',
+  'cleanser',
+  'mask',
+  'other',
+];
+
+/** Подпись категории для чипов формы. */
+export function getCategoryTitle(category: ProductCategory = 'other'): string {
+  return CATEGORY_TITLES[category];
+}
+
 export function inferCategoryFromText(text: string): ProductCategory {
   const lower = text.toLowerCase();
 

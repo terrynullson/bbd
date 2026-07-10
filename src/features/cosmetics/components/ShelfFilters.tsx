@@ -1,52 +1,47 @@
 import { cn } from '@/lib/utils';
-import { useDesignStyle } from '@/components/theme/style-provider';
-import type { ShelfFilter } from '../lib/shelf-filters';
+import type { ShelfCounts, ShelfFilter } from '../lib/shelf-filters';
 
 type ShelfFiltersProps = {
   value: ShelfFilter;
+  counts: ShelfCounts;
   onChange: (filter: ShelfFilter) => void;
 };
 
 const FILTERS: Array<{ id: ShelfFilter; label: string }> = [
   { id: 'all', label: 'Все' },
+  { id: 'fresh', label: 'Свежие' },
   { id: 'expiring', label: 'Скоро' },
-  { id: 'expired', label: 'Просрочено' },
+  { id: 'expired', label: 'Просрочены' },
   { id: 'sealed', label: 'Не открыт' },
 ];
 
-export function ShelfFilters({ value, onChange }: ShelfFiltersProps) {
-  const { designStyle } = useDesignStyle();
-  const chipShape =
-    designStyle === 'pulse'
-      ? 'rounded-[10px]'
-      : designStyle === 'riot'
-        ? 'rounded-none border-2 font-bold uppercase tracking-wider text-xs'
-        : 'rounded-full';
-
+export function ShelfFilters({ value, counts, onChange }: ShelfFiltersProps) {
   return (
     <div
-      className="-mx-4 overflow-x-auto px-4 py-1"
+      className="no-scrollbar -mx-5 overflow-x-auto px-5"
       data-sheet-no-drag
       aria-label="Фильтры полки"
     >
-      <div className="flex w-max gap-2.5">
+      <div className="flex w-max gap-1.5">
         {FILTERS.map((filter) => {
           const isActive = filter.id === value;
+          const count = counts[filter.id];
 
           return (
             <button
               key={filter.id}
               type="button"
               onClick={() => onChange(filter.id)}
+              aria-pressed={isActive}
               className={cn(
-                'motion-safe-transition border px-4 py-2.5 text-sm font-medium transition-all duration-300 active:scale-[0.98]',
-                chipShape,
+                'motion-safe-transition min-h-[34px] shrink-0 rounded-full border px-3',
+                'text-[12.5px] font-semibold transition-all duration-300 active:scale-[0.98]',
                 isActive
-                  ? 'border-accent/35 bg-accent/12 text-accent'
-                  : 'border-border/50 bg-bg text-muted hover:border-accent/25 hover:text-text',
+                  ? 'border-text bg-text text-bg'
+                  : 'border-[var(--chip-border)] bg-transparent text-[var(--chip-text)] hover:border-accent/40',
               )}
             >
-              {filter.label}
+              {filter.id === 'all' ? filter.label : `${filter.label} · ${count}`}
             </button>
           );
         })}
