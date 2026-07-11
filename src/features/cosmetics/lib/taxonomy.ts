@@ -225,10 +225,6 @@ export function getSubtypeLabel(item: CosmeticItem): string {
   return getCategoryLabel(normalizeCategory(item.category));
 }
 
-export function getSubtypePackagingLabel(subtype: ProductSubtype): string {
-  return SUBTYPE_LABELS[subtype];
-}
-
 /** PAO по подтипу, если известен, иначе по категории. */
 export function getDefaultPaoMonths(
   subtype: ProductSubtype,
