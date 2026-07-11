@@ -7,6 +7,7 @@ import { FieldLabel } from '@/components/ui/FieldLabel';
 import { BarcodeScanner } from './BarcodeScanner';
 import { PaoPicker } from './PaoPicker';
 import { OpeningQuestion } from './OpeningQuestion';
+import { PackagingGuide } from './PackagingGuide';
 import { ProductIdentitySection } from './ProductIdentitySection';
 import { Chip, primaryButtonClass } from './AddFormControls';
 import { CATEGORY_ORDER, getCategoryTitle } from '../lib/categories';
@@ -195,9 +196,14 @@ export function AddProductModal({
               )}
 
               <div>
-                <FieldLabel>
-                  {form.isSealed ? 'Годен до (с упаковки)' : 'Годен до (опционально)'}
-                </FieldLabel>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="quiet-label">
+                    {form.isSealed
+                      ? 'Годен до (с упаковки)'
+                      : 'Годен до (опционально)'}
+                  </span>
+                  <PackagingGuide />
+                </div>
                 <Input
                   type="date"
                   value={form.expiresAt}

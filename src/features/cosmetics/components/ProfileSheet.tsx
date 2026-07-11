@@ -3,6 +3,7 @@
 import { Modal } from '@/components/ui/Modal';
 import { AuthPanel } from '@/components/auth/AuthPanel';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { PackagingGuide } from './PackagingGuide';
 import { APP_NAME, APP_VERSION } from '@/lib/constants';
 import { useAuth } from '@/lib/supabase/use-auth';
 import { haptic } from '@/lib/haptics';
@@ -204,7 +205,7 @@ export function ProfileSheet({
           <ThemeToggle />
         </Row>
 
-        <div className="py-[3px]">
+        <div className="border-b border-icon-bg py-[3px]">
           <button
             type="button"
             onClick={exportData}
@@ -216,6 +217,10 @@ export function ProfileSheet({
               ›
             </span>
           </button>
+        </div>
+
+        <div className="py-[3px]">
+          <PackagingGuide variant="row" />
         </div>
       </div>
 

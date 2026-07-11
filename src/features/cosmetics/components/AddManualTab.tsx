@@ -5,6 +5,7 @@ import { FieldLabel } from '@/components/ui/FieldLabel';
 import { SuggestionDropdown } from './SuggestionDropdown';
 import { PaoPicker } from './PaoPicker';
 import { OpeningQuestion } from './OpeningQuestion';
+import { PackagingGuide } from './PackagingGuide';
 import { ghostButtonClass, inputClass, primaryButtonClass } from './AddFormControls';
 import { useSuggestions } from '../hooks/useSuggestions';
 import { inferCategoryFromText } from '../lib/categories';
@@ -176,9 +177,12 @@ export function AddManualTab({
       )}
 
       <div>
-        <FieldLabel>
-          {isSealed ? 'Годен до (с упаковки)' : 'Годен до (опционально)'}
-        </FieldLabel>
+        <div className="mb-2 flex items-center gap-2">
+          <span className="quiet-label">
+            {isSealed ? 'Годен до (с упаковки)' : 'Годен до (опционально)'}
+          </span>
+          <PackagingGuide />
+        </div>
         <input
           type="date"
           aria-label="Годен до"
