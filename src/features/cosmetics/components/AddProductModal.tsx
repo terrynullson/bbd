@@ -3,13 +3,12 @@
 import { useCallback, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
 import { FieldLabel } from '@/components/ui/FieldLabel';
 import { BarcodeScanner } from './BarcodeScanner';
 import { PaoPicker } from './PaoPicker';
 import { OpeningQuestion } from './OpeningQuestion';
 import { ProductIdentitySection } from './ProductIdentitySection';
-import { Chip } from './AddFormControls';
+import { Chip, primaryButtonClass } from './AddFormControls';
 import { CATEGORY_ORDER, getCategoryTitle } from '../lib/categories';
 import { upsertCatalogProduct } from '../api/catalog-product';
 import { useAddProductForm } from '../hooks/useAddProductForm';
@@ -213,9 +212,9 @@ export function AddProductModal({
           </div>
 
           <div className="sticky bottom-0 -mx-5 border-t border-border/60 bg-surface px-5 pb-5 pt-3">
-            <Button type="submit" size="lg" className="h-12 w-full">
+            <button type="submit" className={primaryButtonClass}>
               {isEditing ? 'Сохранить изменения' : 'Сохранить'}
-            </Button>
+            </button>
           </div>
         </form>
       </Modal>
