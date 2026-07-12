@@ -56,7 +56,7 @@ export function SuggestionDropdown({
       <ul
         ref={listRef}
         role="listbox"
-        className="max-h-52 overflow-y-auto overscroll-y-none"
+        className="no-scrollbar max-h-52 overflow-y-auto overscroll-y-none"
       >
       {suggestions.map((suggestion, index) => {
         const sourceLabel = getSourceLabel(suggestion.source);

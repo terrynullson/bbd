@@ -165,7 +165,7 @@ export function CosmeticsPage() {
     <div className="mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden bg-bg shadow-[0_0_60px_rgba(46,42,36,0.08)]">
       <main
         ref={mainRef}
-        className="content-enter relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-none px-5 pb-[calc(8rem+var(--safe-bottom))] pt-[max(1.75rem,var(--safe-top))]"
+        className="no-scrollbar content-enter relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-none px-5 pb-[calc(8rem+var(--safe-bottom))] pt-[max(1.75rem,var(--safe-top))]"
       >
         <ShelfHeader
           total={items.length}

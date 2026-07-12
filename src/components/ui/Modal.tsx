@@ -197,7 +197,7 @@ export function Modal({
 
         <div
           ref={contentRef}
-          className="safe-bottom min-h-0 flex-1 overflow-y-auto overscroll-y-none px-5 pb-5"
+          className="no-scrollbar safe-bottom min-h-0 flex-1 overflow-y-auto overscroll-y-none px-5 pb-5"
         >
           {children}
         </div>

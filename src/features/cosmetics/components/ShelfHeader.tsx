@@ -61,11 +61,11 @@ export function ShelfHeader({
               ? `Уведомления, новых: ${unseenCount}`
               : 'Уведомления'
           }
-          className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-text transition-colors hover:border-accent/40"
+          className="relative -mr-1 flex h-11 w-11 shrink-0 items-center justify-center text-text"
         >
           <svg
-            width="20"
-            height="20"
+            width="22"
+            height="22"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -80,8 +80,8 @@ export function ShelfHeader({
 
           {unseenCount > 0 && (
             <span
-              className="absolute -right-0.5 -top-0.5 flex min-w-[19px] items-center justify-center rounded-full px-1 text-[11px] font-bold text-surface"
-              style={{ height: 19, background: 'var(--expired)' }}
+              className="absolute right-1 top-1 flex min-w-[17px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-surface"
+              style={{ height: 17, background: 'var(--expired)' }}
             >
               {unseenCount > 9 ? '9+' : unseenCount}
             </span>
