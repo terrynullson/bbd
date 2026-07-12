@@ -151,9 +151,3 @@ export interface ProductSuggestion {
   imageUrl?: string;
   source: 'local' | 'catalog' | 'personal';
 }
-
-export interface StatusSummary {
-  fresh: number;
-  expiring: number;
-  expired: number;
-}
