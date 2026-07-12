@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildReminders, countUnseen } from './reminders';
+import { buildReminders } from './reminders';
 import type { CosmeticItem } from '../types';
 
 const NOW = new Date('2026-07-10T12:00:00.000Z');
@@ -72,17 +72,5 @@ describe('buildReminders', () => {
     expect(buildReminders([item({ id: 'x', expiresAt: shift(-1) })], 14)[0].id).toBe(
       'x:expired',
     );
-  });
-});
-
-describe('countUnseen', () => {
-  it('считает непоказанные по id', () => {
-    const reminders = buildReminders(
-      [item({ id: 'a', expiresAt: shift(-1) }), item({ id: 'b', expiresAt: shift(2) })],
-      14,
-    );
-    expect(countUnseen(reminders, [])).toBe(2);
-    expect(countUnseen(reminders, ['a:expired'])).toBe(1);
-    expect(countUnseen(reminders, ['a:expired', 'b:expiring'])).toBe(0);
   });
 });

@@ -61,9 +61,3 @@ export function buildReminders(
 
   return reminders.sort((a, b) => a.daysLeft - b.daysLeft);
 }
-
-/** Сколько напоминаний ещё не показывалось (для бейджа на колокольчике). */
-export function countUnseen(reminders: Reminder[], seen: string[]): number {
-  const seenSet = new Set(seen);
-  return reminders.filter((r) => !seenSet.has(r.id)).length;
-}

@@ -9,8 +9,8 @@ type ShelfHeaderProps = {
   needsAttention: number;
   /** Имя из профиля, если пользователь вошёл. */
   userName?: string | null;
-  /** Число непоказанных напоминаний для бейджа. */
-  unseenCount: number;
+  /** Сколько напоминаний сейчас — число на бейдже. */
+  count: number;
   onOpenNotifications: () => void;
 };
 
@@ -39,7 +39,7 @@ export function ShelfHeader({
   total,
   needsAttention,
   userName,
-  unseenCount,
+  count,
   onOpenNotifications,
 }: ShelfHeaderProps) {
   const greeting = greetingFor(new Date().getHours());
@@ -57,9 +57,7 @@ export function ShelfHeader({
             onOpenNotifications();
           }}
           aria-label={
-            unseenCount > 0
-              ? `Уведомления, новых: ${unseenCount}`
-              : 'Уведомления'
+            count > 0 ? `Уведомления: ${count}` : 'Уведомления'
           }
           className="relative -mr-1 flex h-11 w-11 shrink-0 items-center justify-center text-text"
         >
@@ -78,12 +76,12 @@ export function ShelfHeader({
             <path d="M13.7 21a2 2 0 0 1-3.4 0" />
           </svg>
 
-          {unseenCount > 0 && (
+          {count > 0 && (
             <span
               className="absolute right-1 top-1 flex min-w-[17px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-surface"
               style={{ height: 17, background: 'var(--expired)' }}
             >
-              {unseenCount > 9 ? '9+' : unseenCount}
+              {count > 9 ? '9+' : count}
             </span>
           )}
         </button>

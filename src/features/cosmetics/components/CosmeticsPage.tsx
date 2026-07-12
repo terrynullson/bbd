@@ -54,7 +54,7 @@ export function CosmeticsPage() {
   const [isNotifsOpen, setIsNotifsOpen] = useState(false);
   const [shelfFilter, setShelfFilter] = useState<ShelfFilter>('all');
 
-  const { reminders, unseenCount, markAllSeen } = useReminders(items);
+  const { reminders, count: reminderCount } = useReminders(items);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mainRef = useRef<HTMLElement>(null);
 
@@ -68,7 +68,6 @@ export function CosmeticsPage() {
   const openNotifications = () => {
     setActiveTab('shelf');
     setIsNotifsOpen(true);
-    markAllSeen();
   };
   const isSignedIn = Boolean(user);
 
@@ -171,7 +170,7 @@ export function CosmeticsPage() {
           total={items.length}
           needsAttention={needsAttention}
           userName={userName}
-          unseenCount={unseenCount}
+          count={reminderCount}
           onOpenNotifications={openNotifications}
         />
 
