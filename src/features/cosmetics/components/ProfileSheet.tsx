@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/Modal';
 import { AuthPanel } from '@/components/auth/AuthPanel';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { PackagingGuide } from './PackagingGuide';
+import { PushReminderRow } from '@/features/push/components/PushReminderRow';
 import { APP_NAME, APP_VERSION } from '@/lib/constants';
 import { useAuth } from '@/lib/supabase/use-auth';
 import { haptic } from '@/lib/haptics';
@@ -200,6 +201,8 @@ export function ProfileSheet({
             {installed ? 'установлено' : 'PWA →'}
           </span>
         </Row>
+
+        <PushReminderRow />
 
         <Row label="Тема оформления">
           <ThemeToggle />

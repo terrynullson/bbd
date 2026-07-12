@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BottomNavBar } from '@/components/layout/BottomNavBar';
 import { ShelfHeader } from './ShelfHeader';
 import { AddProductModal } from './AddProductModal';
@@ -126,6 +126,53 @@ export function CosmeticsPage() {
   };
 
   useEffect(() => clearUndoTimer, []);
+
+  // Открыть средство по клику на push-уведомлении: SW шлёт postMessage в уже
+  // открытую вкладку, а при холодном старте средство приходит в `?notif=`.
+  const itemsRef = useRef(items);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+  const notifHandledRef = useRef(false);
+
+  const openReminderItem = useCallback((itemId: string) => {
+    const target = itemsRef.current.find((candidate) => candidate.id === itemId);
+    if (!target) return;
+    setActiveTab('shelf');
+    setIsProfileOpen(false);
+    setDetailItem(target);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded || notifHandledRef.current) return;
+    notifHandledRef.current = true;
+
+    const params = new URLSearchParams(window.location.search);
+    const notifId = params.get('notif');
+    if (notifId) {
+      openReminderItem(notifId);
+      params.delete('notif');
+      const query = params.toString();
+      window.history.replaceState(
+        null,
+        '',
+        window.location.pathname + (query ? `?${query}` : ''),
+      );
+    }
+  }, [isLoaded, openReminderItem]);
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'open-reminder' && event.data.itemId) {
+        openReminderItem(event.data.itemId);
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () =>
+      navigator.serviceWorker.removeEventListener('message', onMessage);
+  }, [openReminderItem]);
 
   const filteredItems = useMemo(
     () => applyShelfFilter(items, shelfFilter),

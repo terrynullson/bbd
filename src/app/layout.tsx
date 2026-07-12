@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Manrope } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme/theme-provider';
+import { ServiceWorkerRegistrar } from '@/features/push/components/ServiceWorkerRegistrar';
 import { APP_DESCRIPTION, APP_NAME } from '@/lib/constants';
 import './globals.css';
 
@@ -51,6 +52,7 @@ export default function RootLayout({
       </head>
       <body className={`${manrope.variable} min-h-full antialiased`}>
         <ThemeProvider>{children}</ThemeProvider>
+        <ServiceWorkerRegistrar />
       </body>
     </html>
   );
