@@ -59,6 +59,7 @@ export function AddProductModal({
   const { user } = useAuth();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [nameError, setNameError] = useState('');
+  const [dateError, setDateError] = useState('');
   const form = useAddProductForm(item ?? initialValues);
   const isEditing = Boolean(item);
 
@@ -87,7 +88,15 @@ export function AddProductModal({
       return;
     }
 
+    if (input.isSealed && !input.expiresAt) {
+      setNameError('');
+      setDateError('Для неоткрытого укажите «Годен до» с упаковки');
+      haptic('error');
+      return;
+    }
+
     setNameError('');
+    setDateError('');
     onSubmit(input);
     void upsertCatalogProduct(input);
     if (!isEditing) form.reset();
@@ -177,6 +186,7 @@ export function AddProductModal({
                   onChange={(next) => {
                     form.setIsSealed(next.isSealed);
                     form.setOpenedAt(next.openedAt);
+                    if (!next.isSealed && dateError) setDateError('');
                   }}
                 />
               </div>
@@ -207,8 +217,15 @@ export function AddProductModal({
                 <Input
                   type="date"
                   value={form.expiresAt}
-                  onChange={(event) => form.setExpiresAt(event.target.value)}
+                  error={Boolean(dateError)}
+                  onChange={(event) => {
+                    form.setExpiresAt(event.target.value);
+                    if (dateError) setDateError('');
+                  }}
                 />
+                {dateError && (
+                  <p className="mt-1.5 text-xs text-expired">{dateError}</p>
+                )}
               </div>
 
               <p className="text-xs leading-relaxed text-muted">
