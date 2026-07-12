@@ -3,6 +3,10 @@ export const STORAGE_SCHEMA_VERSION = 3;
 export const SHELF_TIP_DISMISS_KEY = 'bbd-shelf-tip-dismissed';
 export const THEME_STORAGE_KEY = 'gde-moy-krem-theme';
 export const INSTALL_DISMISS_KEY = 'gde-moy-krem-install-dismissed';
+export const NOTIFS_SEEN_KEY = 'bbd-notifs-seen';
+
+/** За сколько дней до конца срока показывать напоминание. */
+export const REMINDER_WINDOW_DAYS = 14;
 
 /** Три самых частых PAO на упаковке; всё остальное — через «Другое». */
 export const PAO_PRESETS = [6, 12, 24] as const;

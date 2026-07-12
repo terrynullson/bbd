@@ -7,6 +7,7 @@ import { AddProductModal } from './AddProductModal';
 import { QuickAddSheet } from './QuickAddSheet';
 import { ProfileSheet } from './ProfileSheet';
 import { ProductDetailSheet } from './ProductDetailSheet';
+import { NotificationsSheet } from './NotificationsSheet';
 import { CosmeticsDashboard } from './CosmeticsDashboard';
 import { EmptyState } from './EmptyState';
 import { ShelfFilters } from './ShelfFilters';
@@ -18,6 +19,7 @@ import {
   type ShelfFilter,
 } from '../lib/shelf-filters';
 import { useCosmetics } from '../hooks/useCosmetics';
+import { useReminders } from '../hooks/useReminders';
 import { haptic } from '@/lib/haptics';
 import type { AddProductInput, CosmeticItem } from '../types';
 
@@ -49,12 +51,25 @@ export function CosmeticsPage() {
   const [quickAddDraft, setQuickAddDraft] = useState<Partial<AddProductInput>>();
   const [deletedItem, setDeletedItem] = useState<CosmeticItem | null>(null);
   const [detailItem, setDetailItem] = useState<CosmeticItem | null>(null);
+  const [isNotifsOpen, setIsNotifsOpen] = useState(false);
   const [shelfFilter, setShelfFilter] = useState<ShelfFilter>('all');
+
+  const { reminders, unseenCount, markAllSeen } = useReminders(items);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mainRef = useRef<HTMLElement>(null);
 
   const isSheetOpen =
-    isQuickAddOpen || isProfileOpen || isModalOpen || detailItem !== null;
+    isQuickAddOpen ||
+    isProfileOpen ||
+    isModalOpen ||
+    isNotifsOpen ||
+    detailItem !== null;
+
+  const openNotifications = () => {
+    setActiveTab('shelf');
+    setIsNotifsOpen(true);
+    markAllSeen();
+  };
   const isSignedIn = Boolean(user);
 
   const openQuickAdd = (draft?: Partial<AddProductInput>) => {
@@ -156,6 +171,8 @@ export function CosmeticsPage() {
           total={items.length}
           needsAttention={needsAttention}
           userName={userName}
+          unseenCount={unseenCount}
+          onOpenNotifications={openNotifications}
         />
 
         {items.length === 0 ? (
@@ -223,6 +240,20 @@ export function CosmeticsPage() {
           onRemove={handleRemove}
           onEdit={openEditModal}
           onUpdate={updateItem}
+        />
+      )}
+
+      {isNotifsOpen && (
+        <NotificationsSheet
+          reminders={reminders}
+          onClose={() => setIsNotifsOpen(false)}
+          onOpenItem={(itemId) => {
+            const target = items.find((candidate) => candidate.id === itemId);
+            if (target) {
+              setIsNotifsOpen(false);
+              setDetailItem(target);
+            }
+          }}
         />
       )}
 
